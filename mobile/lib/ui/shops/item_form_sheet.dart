@@ -154,7 +154,11 @@ class _ItemFormSheetState extends ConsumerState<_ItemFormSheet> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 SegmentedButton<PriceMode>(
                   segments: [for (final m in PriceMode.values) ButtonSegment(value: m, label: Text(m.label))],
@@ -162,7 +166,6 @@ class _ItemFormSheetState extends ConsumerState<_ItemFormSheet> {
                   showSelectedIcon: false,
                   onSelectionChanged: (s) => setState(() => _mode = s.first),
                 ),
-                const Spacer(),
                 DropdownButton<int>(
                   value: rate,
                   items: [
@@ -174,16 +177,24 @@ class _ItemFormSheetState extends ConsumerState<_ItemFormSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
-                const Text('수량'),
-                IconButton(
-                  onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
-                  icon: const Icon(Icons.remove_circle_outline),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('수량'),
+                    IconButton(
+                      onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Text('$_qty', style: Theme.of(context).textTheme.titleMedium),
+                    IconButton(onPressed: () => setState(() => _qty++), icon: const Icon(Icons.add_circle_outline)),
+                  ],
                 ),
-                Text('$_qty', style: Theme.of(context).textTheme.titleMedium),
-                IconButton(onPressed: () => setState(() => _qty++), icon: const Icon(Icons.add_circle_outline)),
-                const Spacer(),
                 DropdownButton<ItemCategory>(
                   value: _category,
                   items: [for (final c in ItemCategory.values) DropdownMenuItem(value: c, child: Text(c.label))],

@@ -62,7 +62,12 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
-                    Row(
+                    // Wraps onto two lines with large text instead of overflowing.
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         SegmentedButton<PriceMode>(
                           segments: [for (final m in PriceMode.values) ButtonSegment(value: m, label: Text(m.label))],
@@ -70,7 +75,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                           showSelectedIcon: false,
                           onSelectionChanged: (s) => setState(() => _mode = s.first),
                         ),
-                        const Spacer(),
                         ChoiceChip(
                           label: Text('${rules.reducedTaxRatePct}% 식품'),
                           selected: _reduced,
@@ -149,8 +153,14 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     child: Row(
       children: [
         Text(label, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+          ),
+        ),
       ],
     ),
   );
@@ -190,7 +200,10 @@ class _Keypad extends StatelessWidget {
     child: Center(
       child: k == '⌫'
           ? Semantics(label: '지우기, 길게 누르면 전체 삭제', child: const Icon(Icons.backspace_outlined))
-          : Text(k, style: style),
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(k, style: style),
+            ),
     ),
   );
 }

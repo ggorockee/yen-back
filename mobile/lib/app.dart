@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'config.dart';
 import 'state/providers.dart';
 import 'ui/calculator/calculator_screen.dart';
 import 'ui/dashboard/dashboard_screen.dart';
@@ -24,6 +25,13 @@ class YenBackApp extends ConsumerWidget {
       supportedLocales: const [Locale('ko', 'KR')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: onboarded ? const HomeShell() : const OnboardingScreen(),
+      // Honor the system text size up to 150%. Beyond that (iOS accessibility
+      // sizes reach ~310%) fixed layouts like the keypad cannot fit a phone
+      // screen; every screen is tested at this cap (test/large_text_test.dart).
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: AppConfig.maxTextScale,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 
