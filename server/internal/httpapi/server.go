@@ -4,6 +4,7 @@ package httpapi
 import (
 	"context"
 	"crypto/subtle"
+	_ "embed"
 	"errors"
 	"log/slog"
 	"strconv"
@@ -60,6 +61,9 @@ type eventsRequest struct {
 		Count int    `json:"count"`
 	} `json:"events"`
 }
+
+//go:embed privacy.html
+var privacyHTML []byte
 
 // New builds the public API app.
 func New(svc RateService, opt Options) *fiber.App {
@@ -177,6 +181,13 @@ func New(svc RateService, opt Options) *fiber.App {
 			}
 		}
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"accepted": accepted})
+	})
+
+	// Privacy policy linked from both app stores and the app's settings screen.
+	app.Get("/privacy", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
+		c.Set(fiber.HeaderCacheControl, "public, max-age=3600")
+		return c.Send(privacyHTML)
 	})
 
 	internal := app.Group("/internal", requireToken(opt.InternalToken))

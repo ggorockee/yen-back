@@ -143,3 +143,16 @@ func TestStores(t *testing.T) {
 		t.Errorf("content-type = %q", resp.Header.Get("Content-Type"))
 	}
 }
+
+func TestPrivacy(t *testing.T) {
+	resp, body := do(t, &fakeService{}, "", httptest.NewRequest(http.MethodGet, "/privacy", nil))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("content-type = %q", ct)
+	}
+	if !strings.Contains(body, "개인정보처리방침") {
+		t.Fatal("privacy page body missing title")
+	}
+}

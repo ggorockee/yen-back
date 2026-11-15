@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../config.dart';
 import '../../core/format.dart';
 import '../../services/purchase_service.dart';
 import '../../state/providers.dart';
@@ -29,9 +30,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _messages = _purchases.messages.listen((m) {
       if (mounted) showSnack(context, m);
     });
-    _purchases.price().then((p) {
-      if (mounted) setState(() => _price = p);
-    });
+    if (AppConfig.iapEnabled) {
+      _purchases.price().then((p) {
+        if (mounted) setState(() => _price = p);
+      });
+    }
   }
 
   @override
@@ -58,17 +61,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(trip?.departureAt == null ? '미입력' : dateTimeLabel(trip!.departureAt!)),
             onTap: () => showTripFormSheet(context),
           ),
-          const _Header('광고'),
-          if (adFree)
-            const ListTile(leading: Icon(Icons.verified_outlined), title: Text('광고 제거 적용됨'))
-          else
-            ListTile(
-              leading: const Icon(Icons.block),
-              title: const Text('광고 제거 (1회 결제)'),
-              subtitle: Text(_price ?? '스토어 연결 중…'),
-              onTap: _purchases.buy,
-            ),
-          ListTile(leading: const Icon(Icons.restore), title: const Text('구매 복원'), onTap: _purchases.restore),
+          if (AppConfig.iapEnabled) ...[
+            const _Header('광고'),
+            if (adFree)
+              const ListTile(leading: Icon(Icons.verified_outlined), title: Text('광고 제거 적용됨'))
+            else
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('광고 제거 (1회 결제)'),
+                subtitle: Text(_price ?? '스토어 연결 중…'),
+                onTap: _purchases.buy,
+              ),
+            ListTile(leading: const Icon(Icons.restore), title: const Text('구매 복원'), onTap: _purchases.restore),
+          ],
           const _Header('환율'),
           ListTile(
             leading: const Icon(Icons.currency_exchange),
@@ -108,6 +113,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               '위치는 저장하지 않아요. 앱을 삭제하면 모든 데이터가 지워져요.',
             ),
             isThreeLine: true,
+          ),
+          ListTile(
+            leading: const Icon(Icons.policy_outlined),
+            title: const Text('개인정보처리방침'),
+            onTap: () => launchUrl(Uri.parse(AppConfig.privacyPolicyUrl), mode: LaunchMode.externalApplication),
           ),
           const _Header('안내'),
           const ListTile(

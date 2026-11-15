@@ -16,6 +16,13 @@ class AppConfig {
 
   static const removeAdsProductId = 'remove_ads';
 
+  /// The "remove ads" purchase is hidden until the product is registered in
+  /// both stores; showing a purchase that cannot complete fails store review.
+  static const iapEnabled = bool.fromEnvironment('IAP_ENABLED');
+
+  /// Public privacy policy (served by the API server).
+  static const privacyPolicyUrl = 'https://yen-back.woohalabs.com/privacy';
+
   /// Upper bound for the system text scale (see YenBackApp.builder).
   static const maxTextScale = 1.5;
 
