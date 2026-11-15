@@ -44,16 +44,17 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
   final _focus = FocusNode();
   late DateTime _date = widget.existing?.purchaseDate ?? dateOnly(DateTime.now());
 
-  // Nearby branches (Google Places via our server).
+  // Nearby branches (Google Places via our server). Each search is a billable
+  // call, so it runs once when a chain is picked from the list, or when the
+  // user taps "근처 지점 찾기" for a name typed by hand; never per keystroke.
   LocationResult? _location;
   bool _locating = false;
   List<NearbyBranch>? _branches;
   bool _searching = false;
   bool _searchFailed = false;
-  String _lastQuery = '';
+  String? _searchedQuery;
+  String? _pendingQuery;
   String? _pickedBranch;
-  Timer? _debounce;
-  final _memo = <String, List<NearbyBranch>>{};
 
   @override
   void initState() {
@@ -63,12 +64,18 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
   }
 
   void _onChanged() {
-    setState(() {});
-    final q = _name.text.trim();
-    if (q == _pickedBranch || q == _lastQuery) return;
-    _pickedBranch = null;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () => _search(q));
+    final text = _name.text.trim();
+    if (text == _pickedBranch) return; // Text set by picking a branch.
+    setState(() {
+      _pickedBranch = null;
+      // Typing something else hides results that no longer match.
+      final searched = _searchedQuery;
+      if (searched != null && !text.startsWith(searched)) {
+        _searchedQuery = null;
+        _branches = null;
+        _searchFailed = false;
+      }
+    });
   }
 
   Future<void> _locate({required bool request}) async {
@@ -79,32 +86,30 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
       _location = loc;
       _locating = false;
     });
-    final q = _name.text.trim();
-    if (loc.ok && q.isNotEmpty) _search(q);
+    final pending = _pendingQuery;
+    if (loc.ok && pending != null) _search(pending);
   }
 
   Future<void> _search(String q) async {
+    q = q.trim();
     final loc = _location;
-    _lastQuery = q;
-    if (loc == null || !loc.ok || q.runes.length < 2) {
-      setState(() => _branches = null);
+    if (q.runes.length < 2) return;
+    if (loc == null || !loc.ok) {
+      _pendingQuery = q; // Search once location becomes available.
       return;
     }
-    final key = '$q|${loc.lat!.toStringAsFixed(2)}|${loc.lng!.toStringAsFixed(2)}';
-    if (_memo.containsKey(key)) {
-      setState(() => _branches = _memo[key]);
-      return;
-    }
+    _pendingQuery = null;
     setState(() {
+      _searchedQuery = q;
+      _branches = null;
       _searching = true;
       _searchFailed = false;
     });
     try {
       final found = await ref.read(remoteRepositoryProvider).searchBranches(q, loc.lat!, loc.lng!);
-      _memo[key] = found;
-      if (mounted && _lastQuery == q) setState(() => _branches = found);
+      if (mounted && _searchedQuery == q) setState(() => _branches = found);
     } catch (_) {
-      if (mounted && _lastQuery == q) setState(() => _searchFailed = true);
+      if (mounted && _searchedQuery == q) setState(() => _searchFailed = true);
     } finally {
       if (mounted) setState(() => _searching = false);
     }
@@ -120,7 +125,6 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _name.removeListener(_onChanged);
     _name.dispose();
     _focus.dispose();
@@ -164,6 +168,11 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
                   ),
                   onSubmitted: (_) => _submit(),
                 ),
+                // Picking a chain is the one moment we look up its branches.
+                onSelected: (s) {
+                  final brand = s.brand;
+                  if (brand != null) _search(brand.ko);
+                },
                 optionsViewBuilder: (context, onSelected, options) =>
                     _SuggestionList(width: constraints.maxWidth, options: options.toList(), onSelected: onSelected),
               ),
@@ -175,7 +184,9 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
               failed: _searchFailed,
               branches: _branches,
               picked: _pickedBranch,
-              hasQuery: _name.text.trim().runes.length >= 2,
+              typed: _name.text.trim(),
+              searched: _searchedQuery,
+              onSearchTyped: () => _search(_name.text),
               onPick: _pickBranch,
               onAllowLocation: () async {
                 if (_location?.status == LocationStatus.deniedForever) {
@@ -256,7 +267,7 @@ class _SuggestionList extends StatelessWidget {
   }
 }
 
-/// "근처 지점" section: nearest branches for the typed chain, or a hint.
+/// "근처 지점" section: nearest branches of the picked chain, or a hint.
 class _NearbyBranches extends StatelessWidget {
   const _NearbyBranches({
     required this.location,
@@ -265,7 +276,9 @@ class _NearbyBranches extends StatelessWidget {
     required this.failed,
     required this.branches,
     required this.picked,
-    required this.hasQuery,
+    required this.typed,
+    required this.searched,
+    required this.onSearchTyped,
     required this.onPick,
     required this.onAllowLocation,
   });
@@ -276,7 +289,9 @@ class _NearbyBranches extends StatelessWidget {
   final bool failed;
   final List<NearbyBranch>? branches;
   final String? picked;
-  final bool hasQuery;
+  final String typed;
+  final String? searched;
+  final VoidCallback onSearchTyped;
   final ValueChanged<NearbyBranch> onPick;
   final VoidCallback onAllowLocation;
 
@@ -284,9 +299,11 @@ class _NearbyBranches extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline);
+    final loc = location;
+    // A hand-typed name can be searched explicitly (one call per tap).
+    final canSearchTyped = typed.runes.length >= 2 && typed != searched && typed != picked;
 
     Widget body;
-    final loc = location;
     if (locating && loc == null) {
       body = Text('현재 위치 확인 중…', style: muted);
     } else if (loc == null || !loc.ok) {
@@ -298,15 +315,11 @@ class _NearbyBranches extends StatelessWidget {
           label: Text(loc?.status == LocationStatus.serviceOff ? '위치 서비스를 켜면 근처 지점을 보여드려요' : '위치를 허용하고 근처 지점 보기'),
         ),
       );
-    } else if (!hasQuery) {
-      body = Text('매장을 고르면 가까운 지점을 보여드려요', style: muted);
+    } else if (searching) {
+      body = Text('지점 찾는 중…', style: muted);
     } else if (failed) {
       body = Text('지점을 불러오지 못했어요. 이름만 입력해도 괜찮아요.', style: muted);
-    } else if (branches == null) {
-      body = Text('지점 찾는 중…', style: muted);
-    } else if (branches!.isEmpty) {
-      body = Text('근처에서 찾지 못했어요. 일본 현지에서만 보여드려요.', style: muted);
-    } else {
+    } else if (branches != null && branches!.isNotEmpty) {
       body = Column(
         children: [
           for (final b in branches!.take(5))
@@ -329,6 +342,19 @@ class _NearbyBranches extends StatelessWidget {
             ),
         ],
       );
+    } else if (branches != null) {
+      body = Text('근처에서 찾지 못했어요. 일본 현지에서만 보여드려요.', style: muted);
+    } else if (canSearchTyped) {
+      body = Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: onSearchTyped,
+          icon: const Icon(Icons.travel_explore, size: 18),
+          label: Text('\'$typed\' 근처 지점 찾기', maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      );
+    } else {
+      body = Text('목록에서 매장을 고르면 가까운 지점을 보여드려요', style: muted);
     }
 
     return Padding(

@@ -112,21 +112,22 @@ void main() {
     expect(find.text('빅카메라'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, '매장 이름'), '돈키');
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    expect(searches, isEmpty, reason: 'typing must not call the paid API');
     await tester.tap(find.text('돈키호테').last);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, '돈키호테 '), findsOneWidget);
 
-    // Nearby branches load for the chosen chain (debounced) and fill the name.
+    // Picking the chain loads its nearby branches once; tapping one fills the name.
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(searches, contains('돈키호테'));
-    final searchesBeforePick = searches.length;
+    expect(searches, ['돈키호테'], reason: 'exactly one call when a chain is picked');
     expect(find.text('140m · 7-13 Souemoncho'), findsOneWidget);
     expect(find.text('1.9km · 12-7 Nanbasennichimae'), findsOneWidget);
     await tester.tap(find.text('돈키호테 도톤보리점'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, '돈키호테 도톤보리점'), findsOneWidget);
-    expect(searches.length, searchesBeforePick, reason: 'picking a branch must not trigger another search');
+    expect(searches, ['돈키호테'], reason: 'picking a branch must not call again');
     await tester.tap(find.text('저장'));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pumpAndSettle();
