@@ -56,4 +56,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // On-device Japanese receipt OCR (model bundled in the APK, no network).
+    implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
 }

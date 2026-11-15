@@ -13,6 +13,8 @@ var AllowedEvents = map[string]bool{
 	"remove_ads_purchased": true,
 	"onboarding_completed": true,
 	"branch_picked":        true,
+	"receipt_scanned":      true,
+	"receipt_scan_empty":   true,
 }
 
 const (
