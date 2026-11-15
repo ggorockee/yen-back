@@ -1,2 +1,2 @@
-// Google sample AdMob app ID. Replace with the real ID before release.
-ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
+// AdMob app ID for 돌려받엔 iOS.
+ADMOB_APP_ID = ca-app-pub-8516861197467665~1203171840

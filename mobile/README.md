@@ -18,10 +18,10 @@
 | 이름 | 기본값 | 설명 |
 |---|---|---|
 | API_BASE_URL | 릴리스: https://yen-back.woohalabs.com, 디버그: http://10.0.2.2:8080 | 서버 주소 |
-| ADMOB_BANNER_ANDROID / ADMOB_BANNER_IOS | Google 테스트 ID | 배너 광고 단위 |
-| ADMOB_INTERSTITIAL_ANDROID / ADMOB_INTERSTITIAL_IOS | Google 테스트 ID | 전면 광고 단위 |
+| ADMOB_BANNER_ANDROID / ADMOB_BANNER_IOS | 릴리스: 실제 ID, 그 외: Google 테스트 ID | 배너 광고 단위 |
+| ADMOB_INTERSTITIAL_ANDROID / ADMOB_INTERSTITIAL_IOS | 릴리스: 실제 ID, 그 외: Google 테스트 ID | 전면 광고 단위 |
 
-AdMob 앱 ID는 Android는 Gradle 속성 admobAppId, iOS는 ios/Flutter/AdMob.xcconfig의 ADMOB_APP_ID로 바꿉니다. 기본값은 Google 샘플 ID입니다. 광고 제거 상품 ID는 remove_ads (비소모성)이며 두 스토어에 같은 ID로 등록해야 합니다.
+AdMob 앱 ID는 Android는 android/gradle.properties의 admobAppId, iOS는 ios/Flutter/AdMob.xcconfig의 ADMOB_APP_ID입니다. 광고 단위 ID는 릴리스 빌드에서 실제 ID, 그 외에는 Google 테스트 ID가 기본값입니다. 광고 제거 상품 ID는 remove_ads (비소모성)이며 두 스토어에 같은 ID로 등록해야 합니다.
 
 ## 개인정보
 
@@ -37,4 +37,4 @@ AdMob 앱 ID는 Android는 Gradle 속성 admobAppId, iOS는 ios/Flutter/AdMob.xc
 | 테스트 | flutter test |
 | 포맷 | dart format -l 120 lib test |
 | 실행 (로컬 서버) | flutter run (서버를 8080으로 띄운 상태) |
-| 릴리스 빌드 | flutter build appbundle --dart-define=ADMOB_BANNER_ANDROID=실제ID ... |
+| 릴리스 빌드 | flutter build appbundle / flutter build ipa |
