@@ -133,13 +133,13 @@
 
 | 구성요소 | 선택 | 역할 | 비고 |
 |---|---|---|---|
-| 모바일 | Flutter, Riverpod, drift(SQLite), flutter_local_notifications, google_mobile_ads, in_app_purchase | 계산, 장바구니, 영수증, 알림 모두 로컬 | 리뷰맵 코드와 패턴 재사용 |
-| API 서버 | Go Fiber, Cloud Run (최소 인스턴스 0) | 환율 조회 GET 엔드포인트 | 응답에 CDN 캐시 헤더 설정 |
-| 수집 배치 | Cloud Scheduler → 서버의 내부 수집 엔드포인트 호출 | 평일 11:10, 11:40, 13:00, 16:00 (KST)에 수출입은행 호출 | 값이 비어 있으면 기존 값을 유지 |
-| 저장소 | Postgres 1개 테이블 (리뷰맵 DB 인스턴스에 스키마 분리해서 재사용) 또는 Firestore 무료 티어 | 일자별 환율 이력 | 신규 비용 0원에 가까움 (추측) |
+| 모바일 | Flutter, Riverpod, sqflite(SQLite), flutter_local_notifications, google_mobile_ads, in_app_purchase | 계산, 장바구니, 영수증, 알림 모두 로컬 | 리뷰맵 코드와 패턴 재사용 |
+| API 서버 | Go Fiber, 기존 GKE 클러스터 (Helm + ArgoCD GitOps, Istio, yen-back.woohalabs.com) | 환율, 제도 상수, 활동 이벤트 API | 응답에 캐시 헤더 설정. Cloud Run 대신 기존 인프라 재사용 (변경, 2026-11-15) |
+| 수집 배치 | 서버 안 스케줄러 (COLLECT_INTERVAL=30m) + 수동 /internal/collect | 저장된 날짜까지 거슬러 조회, 실행당 호출 몇 회 | 값이 비어 있으면 기존 값을 유지 |
+| 저장소 | MVP는 메모리 저장소 (재시작 시 첫 요청에서 자동 재수집). Postgres 저장소 구현 포함, DATABASE_URL로 전환 | 일자별 환율 이력 | 신규 비용 0원 |
 | 푸시 | MVP는 로컬 알림만 사용. 2차에 FCM 도입 | 출국 리마인드 | 서버에 출국일을 보낼 필요가 없음 |
-| 원격 설정 | Firebase Remote Config | 세율, 5,000엔 기준, 90일, 800달러, 공지 배너 | 제도가 바뀌면 앱 업데이트 없이 반영 |
-| 모니터링 | Crashlytics, Cloud Run 로그, 수집 실패 알림 | | |
+| 원격 설정 | 서버 GET /v1/rules (Firebase 설정 파일 없이 동작하도록 변경) | 세율, 5,000엔 기준, 90일, 800달러, 공지 배너 | 서버 배포만으로 반영, 앱은 캐시 + 기본값 |
+| 모니터링 | Prometheus /metrics(9090, 비공개) + ServiceMonitor, Grafana 대시보드(uid yen-back), 알림 규칙 7종, blackbox 외부 접속 검사, JSON 구조화 로그 | 서버 상태, API, 환율 수집, 앱 활동(플랫폼·버전·이벤트) | infra 레포 kube-prometheus-stack에 연동 |
 
 **환율 수집 정책**
 - 수출입은행 응답이 빈 배열이면(비영업일, 11시 이전) 저장하지 않고 직전 영업일 값을 그대로 제공
@@ -175,7 +175,7 @@ API 응답 예시
 | exchange_rates | id, base_date (date), currency (JPY/USD), krw_per_unit (numeric), raw_value (text), source, fetched_at | (base_date, currency) 유니크 |
 | collector_runs | id, run_at, status (ok/empty/error), message | 수집 실패를 추적 |
 
-### 앱 로컬 (SQLite / drift)
+### 앱 로컬 (SQLite / sqflite)
 
 | 엔티티 | 주요 필드 | 설명 |
 |---|---|---|
@@ -219,29 +219,35 @@ API 응답 예시
 ## 9. 개발 일정 (1인, 6주)
 
 ### 1주차: 기반
-- [ ] Flutter 프로젝트 생성 (리뷰맵의 Riverpod, 테마, 광고 모듈 재사용)
-- [ ] Go 서버 스캐폴딩, 수출입은행 API 키 발급, 수집기 구현
-- [ ] exchange_rates 테이블, 환율 조회 API, Cloud Run 배포, Scheduler 설정
+- [x] Flutter 프로젝트 생성 (리뷰맵의 Riverpod, 테마, 광고 모듈 재사용)
+- [x] Go 서버 스캐폴딩, 수집기 구현
+- [ ] 수출입은행 API 키 발급, GCP Secret Manager에 prod-yen-back-credentials 등록
+- [x] exchange_rates 테이블, 환율 조회 API, 서버 내 수집 스케줄러
+- [x] /metrics, Grafana 대시보드, 알림 규칙, Helm 차트 (infra PR)
+- [ ] infra PR 머지 후 ArgoCD 배포 확인
 
 ### 2주차: 계산기와 캐시
-- [ ] S1 계산기 UI와 세율/세포 계산 로직, 단위 테스트
-- [ ] 환율 동기화와 로컬 캐시, 오프라인 동작
-- [ ] Remote Config 기반 제도 상수 적용
+- [x] S1 계산기 UI와 세율/세포 계산 로직, 단위 테스트
+- [x] 환율 동기화와 로컬 캐시, 오프라인 동작
+- [x] 서버 /v1/rules 기반 제도 상수 적용 (Remote Config 대체)
 
 ### 3주차: 장바구니
-- [ ] drift 스키마 (Trip, Store, Item)
-- [ ] S2/S3 매장 목록, 상세, 5,000엔 진행률
-- [ ] 계산기에서 [담기] 흐름
+- [x] sqflite 스키마 (Trip, Shop, Item, Receipt, Checklist)
+- [x] S2/S3 매장 목록, 상세, 5,000엔 진행률
+- [x] 계산기에서 [담기] 흐름
 
 ### 4주차: 영수증, 대시보드, 알림
-- [ ] S4 영수증 촬영과 로컬 저장
-- [ ] S5 대시보드 (환급 예상액, 800달러 경고)
-- [ ] S6 체크리스트와 로컬 알림 스케줄링
+- [x] S4 영수증 촬영과 로컬 저장
+- [x] S5 대시보드 (환급 예상액, 800달러 경고)
+- [x] S6 체크리스트와 로컬 알림 스케줄링
 
 ### 5주차: 수익화와 마감
-- [ ] AdMob 배너, 전면광고 빈도 제어
-- [ ] 광고 제거 인앱 결제와 복원
-- [ ] 온보딩, 설정, 면책 문구, 개인정보처리방침
+- [x] AdMob 배너, 전면광고 빈도 제어 (테스트 ID)
+- [ ] AdMob 실제 앱 ID, 광고 단위 ID 발급 및 적용
+- [x] 광고 제거 인앱 결제와 복원 (코드)
+- [ ] 스토어에 remove_ads 상품 등록
+- [x] 온보딩, 설정, 면책 문구
+- [ ] 개인정보처리방침 웹 페이지 게시 (스토어 등록용 URL)
 
 ### 6주차: 출시
 - [ ] 제도 팩트 시트를 공식 출처로 최종 검증
@@ -257,7 +263,7 @@ API 응답 예시
 
 | 리스크 | 가능성 | 영향 | 대응 |
 |---|---|---|---|
-| 제도 세부 변경 (기준액, 기한, 수수료) | 중 | 높음 | 상수는 Remote Config로 관리, 앱 안에 출처 링크와 기준일 표시, 면책 문구 |
+| 제도 세부 변경 (기준액, 기한, 수수료) | 중 | 높음 | 상수는 서버 /v1/rules로 관리, 앱 안에 출처 링크와 기준일 표시, 면책 문구 |
 | 잘못된 환급액 안내로 인한 민원 | 중 | 중 | "최대 예상치" 표기, 수수료 안내, 실제 환급은 매장 안내를 따르라는 문구 |
 | 수출입은행 API 장애, 공휴일 공백 | 높음(공백) / 낮음(장애) | 중 | 직전 값 유지, 기준일 표시, 실패 알림, 2차 소스 검토 |
 | API 키 노출 | 낮음 | 중 | 키는 서버에만 두고 앱은 자체 서버만 호출 |
