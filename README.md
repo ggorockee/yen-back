@@ -7,5 +7,6 @@
 | server/ | Go 서버. 한국수출입은행 환율 수집·캐시, 제도 상수 API |
 | mobile/ | Flutter 앱 (Android/iOS) |
 | docs/planning/ | 기획안 |
+| docs/api/ | 외부 API 명세 (한국수출입은행 환율 API, 인증키 만료 등 운영 주의사항) |
 
 자세한 실행 방법은 각 디렉터리의 README를 참고하세요.
