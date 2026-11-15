@@ -2,8 +2,8 @@
 //
 // The API publishes rates once per business day around 11:00 KST. On
 // non-business days, or before the daily publication, it returns an empty
-// array. Callers must treat an empty result as "no data for that date", not
-// as an error.
+// array (the spec says null; both are handled). Callers must treat an empty
+// result as "no data for that date", not as an error.
 package koreaexim
 
 import (
@@ -106,8 +106,12 @@ func parseItems(items []apiItem, currencies []string) (map[string]Rate, error) {
 	for _, it := range items {
 		switch it.Result {
 		case 1:
+		case 2:
+			return nil, errors.New("koreaexim: invalid data code (result=2)")
 		case 3:
-			return nil, errors.New("koreaexim: invalid auth key (result=3)")
+			// Keys are destroyed when the 2-year personal-data retention period
+			// lapses without re-consent; a destroyed key cannot be reused.
+			return nil, errors.New("koreaexim: invalid auth key (result=3); the key may have expired after 2 years without re-consent, apply for a new key")
 		case 4:
 			return nil, errors.New("koreaexim: daily request limit exceeded (result=4)")
 		default:

@@ -73,6 +73,19 @@ func TestFetchEmpty(t *testing.T) {
 	}
 }
 
+func TestFetchNullIsEmpty(t *testing.T) {
+	// The official spec documents a null body for non-business days.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`null`))
+	}))
+	defer srv.Close()
+
+	_, err := New(srv.URL, "key").Fetch(context.Background(), time.Now(), "JPY")
+	if !errors.Is(err, ErrEmpty) {
+		t.Fatalf("err = %v, want ErrEmpty", err)
+	}
+}
+
 func TestFetchAPIError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`[{"result":3,"cur_unit":"","deal_bas_r":""}]`))
