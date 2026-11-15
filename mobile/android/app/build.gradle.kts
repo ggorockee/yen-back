@@ -39,10 +39,10 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Google's sample AdMob app ID unless -PadmobAppId=... is given.
+        // AdMob app ID from gradle.properties (admobAppId).
         manifestPlaceholders["admobAppId"] =
             (project.findProperty("admobAppId") as String?)
-                ?: "ca-app-pub-3940256099942544~3347511713"
+                ?: "ca-app-pub-8516861197467665~8757073285"
     }
 
     signingConfigs {
