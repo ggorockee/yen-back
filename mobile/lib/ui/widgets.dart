@@ -130,6 +130,7 @@ Future<bool> confirm(BuildContext context, String title, String message, {String
     await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
+        scrollable: true,
         title: Text(title),
         content: Text(message),
         actions: [

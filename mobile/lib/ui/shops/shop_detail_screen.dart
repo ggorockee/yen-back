@@ -80,10 +80,11 @@ class ShopDetailScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('상품 ${t.entry.items.length}개', style: theme.textTheme.titleMedium),
-              const Spacer(),
               TextButton.icon(
                 onPressed: () => showItemFormSheet(context, shopId: shop.id),
                 icon: const Icon(Icons.add),
@@ -114,10 +115,11 @@ class ShopDetailScreen extends ConsumerWidget {
               ),
             ),
           const Divider(height: 32),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('영수증 ${t.entry.receipts.length}장', style: theme.textTheme.titleMedium),
-              const Spacer(),
               TextButton.icon(
                 onPressed: () =>
                     Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptFormScreen(shopId: shop.id))),
@@ -162,7 +164,14 @@ class ShopDetailScreen extends ConsumerWidget {
 
   Widget _row(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(children: [Text(label), const Spacer(), Text(value)]),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label),
+        const SizedBox(width: 12),
+        Expanded(child: Text(value, textAlign: TextAlign.end)),
+      ],
+    ),
   );
 
   void _showImage(BuildContext context, String path) => showDialog<void>(

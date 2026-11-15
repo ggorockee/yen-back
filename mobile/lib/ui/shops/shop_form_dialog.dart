@@ -146,74 +146,79 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
       title: Text(widget.existing == null ? '새 매장' : '매장 수정'),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) => RawAutocomplete<ShopSuggestion>(
-                textEditingController: _name,
-                focusNode: _focus,
-                // A chain fills "돈키호테 " so the branch name can be typed next.
-                displayStringForOption: (s) => s.isRecent ? s.name : '${s.name} ',
-                optionsBuilder: (value) => catalog.suggest(value.text, recent: recent),
-                fieldViewBuilder: (context, controller, focusNode, onSubmit) => TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: '매장 이름',
-                    hintText: '예: 돈키호테 도톤보리점',
-                    helperText: '목록에서 고른 뒤 지점명을 이어서 입력하세요',
-                    prefixIcon: Icon(Icons.search),
+        // Scrolls when large text or the nearby-branch list exceeds the screen.
+        // (AlertDialog.scrollable would measure intrinsics, which the
+        // LayoutBuilder below cannot provide.)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) => RawAutocomplete<ShopSuggestion>(
+                  textEditingController: _name,
+                  focusNode: _focus,
+                  // A chain fills "돈키호테 " so the branch name can be typed next.
+                  displayStringForOption: (s) => s.isRecent ? s.name : '${s.name} ',
+                  optionsBuilder: (value) => catalog.suggest(value.text, recent: recent),
+                  fieldViewBuilder: (context, controller, focusNode, onSubmit) => TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: '매장 이름',
+                      hintText: '예: 돈키호테 도톤보리점',
+                      helperText: '목록에서 고른 뒤 지점명을 이어서 입력하세요',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onSubmitted: (_) => _submit(),
                   ),
-                  onSubmitted: (_) => _submit(),
+                  // Picking a chain is the one moment we look up its branches.
+                  onSelected: (s) {
+                    final brand = s.brand;
+                    if (brand != null) _search(brand.ko);
+                  },
+                  optionsViewBuilder: (context, onSelected, options) =>
+                      _SuggestionList(width: constraints.maxWidth, options: options.toList(), onSelected: onSelected),
                 ),
-                // Picking a chain is the one moment we look up its branches.
-                onSelected: (s) {
-                  final brand = s.brand;
-                  if (brand != null) _search(brand.ko);
-                },
-                optionsViewBuilder: (context, onSelected, options) =>
-                    _SuggestionList(width: constraints.maxWidth, options: options.toList(), onSelected: onSelected),
               ),
-            ),
-            _NearbyBranches(
-              location: _location,
-              locating: _locating,
-              searching: _searching,
-              failed: _searchFailed,
-              branches: _branches,
-              picked: _pickedBranch,
-              typed: _name.text.trim(),
-              searched: _searchedQuery,
-              onSearchTyped: () => _search(_name.text),
-              onPick: _pickBranch,
-              onAllowLocation: () async {
-                if (_location?.status == LocationStatus.deniedForever) {
-                  final svc = ref.read(locationServiceProvider);
-                  if (svc is DeviceLocationService) await svc.openSettings();
-                  return;
-                }
-                await _locate(request: true);
-              },
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event),
-              title: Text('구매일 ${dateLabel(_date)}'),
-              subtitle: const Text('날짜가 다르면 다른 매장으로 따로 계산돼요'),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime(2026, 1, 1),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) setState(() => _date = dateOnly(picked));
-              },
-            ),
-          ],
+              _NearbyBranches(
+                location: _location,
+                locating: _locating,
+                searching: _searching,
+                failed: _searchFailed,
+                branches: _branches,
+                picked: _pickedBranch,
+                typed: _name.text.trim(),
+                searched: _searchedQuery,
+                onSearchTyped: () => _search(_name.text),
+                onPick: _pickBranch,
+                onAllowLocation: () async {
+                  if (_location?.status == LocationStatus.deniedForever) {
+                    final svc = ref.read(locationServiceProvider);
+                    if (svc is DeviceLocationService) await svc.openSettings();
+                    return;
+                  }
+                  await _locate(request: true);
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event),
+                title: Text('구매일 ${dateLabel(_date)}'),
+                subtitle: const Text('날짜가 다르면 다른 매장으로 따로 계산돼요'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _date,
+                    firstDate: DateTime(2026, 1, 1),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setState(() => _date = dateOnly(picked));
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
