@@ -75,6 +75,22 @@ class RemoteRepository {
     return catalog;
   }
 
+  /// Branches matching [query] near the location, nearest first. Throws on
+  /// network errors or when the server has search disabled or rate-limited.
+  Future<List<NearbyBranch>> searchBranches(String query, double lat, double lng) async {
+    final uri = Uri.parse('$_baseUrl/v1/places/search')
+        .replace(queryParameters: {'q': query, 'lat': lat.toStringAsFixed(5), 'lng': lng.toStringAsFixed(5)});
+    final res = await _client.get(uri).timeout(_timeout);
+    if (res.statusCode != 200) {
+      throw http.ClientException('HTTP ${res.statusCode}', uri);
+    }
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return [
+      for (final p in (body['places'] as List? ?? const []))
+        if (p is Map<String, dynamic>) NearbyBranch.fromJson(p),
+    ].where((b) => b.name.isNotEmpty).toList();
+  }
+
   Future<Map<String, dynamic>> _get(String path) async {
     final res = await _client.get(Uri.parse('$_baseUrl$path')).timeout(_timeout);
     if (res.statusCode != 200) {

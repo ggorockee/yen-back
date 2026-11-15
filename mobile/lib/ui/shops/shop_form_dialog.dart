@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../core/format.dart';
 import '../../core/store_catalog.dart';
 import '../../data/models.dart';
 import '../../services/analytics.dart';
+import '../../services/location_service.dart';
 import '../../state/providers.dart';
 
 /// Creates a shop, or edits [existing]. Returns the shop id on save.
@@ -41,16 +44,83 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
   final _focus = FocusNode();
   late DateTime _date = widget.existing?.purchaseDate ?? dateOnly(DateTime.now());
 
+  // Nearby branches (Google Places via our server).
+  LocationResult? _location;
+  bool _locating = false;
+  List<NearbyBranch>? _branches;
+  bool _searching = false;
+  bool _searchFailed = false;
+  String _lastQuery = '';
+  String? _pickedBranch;
+  Timer? _debounce;
+  final _memo = <String, List<NearbyBranch>>{};
+
   @override
   void initState() {
     super.initState();
     _name.addListener(_onChanged);
+    _locate(request: true);
   }
 
-  void _onChanged() => setState(() {});
+  void _onChanged() {
+    setState(() {});
+    final q = _name.text.trim();
+    if (q == _pickedBranch || q == _lastQuery) return;
+    _pickedBranch = null;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () => _search(q));
+  }
+
+  Future<void> _locate({required bool request}) async {
+    setState(() => _locating = true);
+    final loc = await ref.read(locationServiceProvider).current(request: request);
+    if (!mounted) return;
+    setState(() {
+      _location = loc;
+      _locating = false;
+    });
+    final q = _name.text.trim();
+    if (loc.ok && q.isNotEmpty) _search(q);
+  }
+
+  Future<void> _search(String q) async {
+    final loc = _location;
+    _lastQuery = q;
+    if (loc == null || !loc.ok || q.runes.length < 2) {
+      setState(() => _branches = null);
+      return;
+    }
+    final key = '$q|${loc.lat!.toStringAsFixed(2)}|${loc.lng!.toStringAsFixed(2)}';
+    if (_memo.containsKey(key)) {
+      setState(() => _branches = _memo[key]);
+      return;
+    }
+    setState(() {
+      _searching = true;
+      _searchFailed = false;
+    });
+    try {
+      final found = await ref.read(remoteRepositoryProvider).searchBranches(q, loc.lat!, loc.lng!);
+      _memo[key] = found;
+      if (mounted && _lastQuery == q) setState(() => _branches = found);
+    } catch (_) {
+      if (mounted && _lastQuery == q) setState(() => _searchFailed = true);
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  void _pickBranch(NearbyBranch b) {
+    _pickedBranch = b.name;
+    _name.text = b.name;
+    _name.selection = TextSelection.collapsed(offset: b.name.length);
+    _focus.unfocus();
+    ref.read(analyticsProvider).track(AppEvent.branchPicked);
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _name.removeListener(_onChanged);
     _name.dispose();
     _focus.dispose();
@@ -97,6 +167,24 @@ class _ShopFormDialogState extends ConsumerState<_ShopFormDialog> {
                 optionsViewBuilder: (context, onSelected, options) =>
                     _SuggestionList(width: constraints.maxWidth, options: options.toList(), onSelected: onSelected),
               ),
+            ),
+            _NearbyBranches(
+              location: _location,
+              locating: _locating,
+              searching: _searching,
+              failed: _searchFailed,
+              branches: _branches,
+              picked: _pickedBranch,
+              hasQuery: _name.text.trim().runes.length >= 2,
+              onPick: _pickBranch,
+              onAllowLocation: () async {
+                if (_location?.status == LocationStatus.deniedForever) {
+                  final svc = ref.read(locationServiceProvider);
+                  if (svc is DeviceLocationService) await svc.openSettings();
+                  return;
+                }
+                await _locate(request: true);
+              },
             ),
             const SizedBox(height: 8),
             ListTile(
@@ -163,6 +251,104 @@ class _SuggestionList extends StatelessWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "근처 지점" section: nearest branches for the typed chain, or a hint.
+class _NearbyBranches extends StatelessWidget {
+  const _NearbyBranches({
+    required this.location,
+    required this.locating,
+    required this.searching,
+    required this.failed,
+    required this.branches,
+    required this.picked,
+    required this.hasQuery,
+    required this.onPick,
+    required this.onAllowLocation,
+  });
+
+  final LocationResult? location;
+  final bool locating;
+  final bool searching;
+  final bool failed;
+  final List<NearbyBranch>? branches;
+  final String? picked;
+  final bool hasQuery;
+  final ValueChanged<NearbyBranch> onPick;
+  final VoidCallback onAllowLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline);
+
+    Widget body;
+    final loc = location;
+    if (locating && loc == null) {
+      body = Text('현재 위치 확인 중…', style: muted);
+    } else if (loc == null || !loc.ok) {
+      body = Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: onAllowLocation,
+          icon: const Icon(Icons.my_location, size: 18),
+          label: Text(loc?.status == LocationStatus.serviceOff ? '위치 서비스를 켜면 근처 지점을 보여드려요' : '위치를 허용하고 근처 지점 보기'),
+        ),
+      );
+    } else if (!hasQuery) {
+      body = Text('매장을 고르면 가까운 지점을 보여드려요', style: muted);
+    } else if (failed) {
+      body = Text('지점을 불러오지 못했어요. 이름만 입력해도 괜찮아요.', style: muted);
+    } else if (branches == null) {
+      body = Text('지점 찾는 중…', style: muted);
+    } else if (branches!.isEmpty) {
+      body = Text('근처에서 찾지 못했어요. 일본 현지에서만 보여드려요.', style: muted);
+    } else {
+      body = Column(
+        children: [
+          for (final b in branches!.take(5))
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              leading: Icon(
+                b.name == picked ? Icons.check_circle : Icons.place_outlined,
+                size: 20,
+                color: b.name == picked ? theme.colorScheme.primary : null,
+              ),
+              title: Text(b.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                [b.distanceLabel, if (b.address.isNotEmpty) b.address].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () => onPick(b),
+            ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.near_me_outlined, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 4),
+              Text('근처 지점', style: theme.textTheme.labelLarge),
+              const Spacer(),
+              if (searching || locating)
+                const SizedBox.square(dimension: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          body,
+        ],
       ),
     );
   }

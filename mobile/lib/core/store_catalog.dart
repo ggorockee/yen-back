@@ -119,3 +119,21 @@ class StoreCatalog {
   /// and "ドン・キホーテ" match their stored forms.
   static String normalize(String s) => s.toLowerCase().replaceAll(RegExp(r'[\s・\-_.·@]'), '');
 }
+
+/// A branch near the user, from the server's `/v1/places/search`.
+class NearbyBranch {
+  const NearbyBranch({required this.name, required this.address, required this.distanceM});
+
+  final String name;
+  final String address;
+  final int distanceM;
+
+  factory NearbyBranch.fromJson(Map<String, dynamic> j) => NearbyBranch(
+    name: '${j['name'] ?? ''}',
+    address: '${j['address'] ?? ''}',
+    distanceM: (j['distance_m'] as num?)?.toInt() ?? 0,
+  );
+
+  /// "140m" under 1km, else "1.9km".
+  String get distanceLabel => distanceM < 1000 ? '${distanceM}m' : '${(distanceM / 1000).toStringAsFixed(1)}km';
+}

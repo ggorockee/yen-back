@@ -14,6 +14,7 @@ import 'package:yen_back/app.dart';
 import 'package:yen_back/data/app_database.dart';
 import 'package:yen_back/data/receipt_files.dart';
 import 'package:yen_back/services/analytics.dart';
+import 'package:yen_back/services/location_service.dart';
 import 'package:yen_back/services/notification_service.dart';
 import 'package:yen_back/services/purchase_service.dart';
 import 'package:yen_back/state/providers.dart';
@@ -33,6 +34,7 @@ void main() {
       () => AppDatabase.open(path: inMemoryDatabasePath, factory: databaseFactoryFfiNoIsolate),
     );
     final events = <String>[];
+    final searches = <String>[];
 
     final client = MockClient((req) async {
       switch (req.url.path) {
@@ -47,6 +49,18 @@ void main() {
               },
             }),
             200,
+          );
+        case '/v1/places/search':
+          searches.add(req.url.queryParameters['q'] ?? '');
+          return http.Response(
+            jsonEncode({
+              'places': [
+                {'id': 'a', 'name': '돈키호테 도톤보리점', 'address': '7-13 Souemoncho', 'distance_m': 140},
+                {'id': 'b', 'name': '돈키호테 난바센니치마에점', 'address': '12-7 Nanbasennichimae', 'distance_m': 1949},
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
           );
         case '/v1/events':
           events.add(req.body);
@@ -66,6 +80,7 @@ void main() {
           bundledStoresJsonProvider.overrideWithValue(File('assets/stores.json').readAsStringSync()),
           httpClientProvider.overrideWithValue(client),
           purchasesProvider.overrideWithValue(_FakePurchases()),
+          locationServiceProvider.overrideWithValue(_FakeLocation()),
         ],
         child: const YenBackApp(),
       ),
@@ -100,6 +115,18 @@ void main() {
     await tester.tap(find.text('돈키호테').last);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, '돈키호테 '), findsOneWidget);
+
+    // Nearby branches load for the chosen chain (debounced) and fill the name.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(searches, contains('돈키호테'));
+    final searchesBeforePick = searches.length;
+    expect(find.text('140m · 7-13 Souemoncho'), findsOneWidget);
+    expect(find.text('1.9km · 12-7 Nanbasennichimae'), findsOneWidget);
+    await tester.tap(find.text('돈키호테 도톤보리점'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '돈키호테 도톤보리점'), findsOneWidget);
+    expect(searches.length, searchesBeforePick, reason: 'picking a branch must not trigger another search');
     await tester.tap(find.text('저장'));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pumpAndSettle();
@@ -111,7 +138,7 @@ void main() {
     // Shop list shows the remaining amount
     await tester.tap(find.text('매장'));
     await tester.pumpAndSettle();
-    expect(find.text('돈키호테'), findsOneWidget);
+    expect(find.text('돈키호테 도톤보리점'), findsOneWidget);
     expect(find.textContaining('¥4,000 남음'), findsOneWidget);
 
     // Dashboard renders with the summary
@@ -136,4 +163,10 @@ class _FakePurchases implements Purchases {
   Stream<String> get messages => const Stream.empty();
   @override
   Future<void> dispose() async {}
+}
+
+class _FakeLocation implements LocationService {
+  @override
+  Future<LocationResult> current({bool request = true}) async =>
+      const LocationResult(LocationStatus.ok, lat: 34.6687, lng: 135.5013);
 }

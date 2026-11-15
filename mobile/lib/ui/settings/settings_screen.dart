@@ -103,8 +103,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: Icon(Icons.lock_outline),
             title: Text('내 데이터는 기기에만 저장돼요'),
             subtitle: Text(
-              '매장, 상품, 영수증 사진, 출국일은 이 기기에만 저장돼요. 서버에는 환율 조회와 '
-              '기능 사용 횟수(개인을 식별할 수 없는 집계)만 전송돼요. 앱을 삭제하면 모든 데이터가 지워져요.',
+              '매장, 상품, 영수증 사진, 출국일은 이 기기에만 저장돼요. 서버에는 환율 조회, '
+              '기능 사용 횟수(개인을 식별할 수 없는 집계), 근처 지점을 찾을 때의 현재 위치만 전송되고 '
+              '위치는 저장하지 않아요. 앱을 삭제하면 모든 데이터가 지워져요.',
             ),
             isThreeLine: true,
           ),

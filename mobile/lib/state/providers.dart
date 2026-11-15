@@ -14,6 +14,7 @@ import '../data/receipt_files.dart';
 import '../data/remote_repository.dart';
 import '../services/ads.dart';
 import '../services/analytics.dart';
+import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 
@@ -303,3 +304,5 @@ final recentShopNamesProvider = Provider<List<String>>((ref) {
       if (seen.add(e.shop.name)) e.shop.name,
   ];
 });
+
+final locationServiceProvider = Provider<LocationService>((_) => DeviceLocationService());
