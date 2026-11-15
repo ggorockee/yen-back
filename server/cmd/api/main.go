@@ -12,7 +12,9 @@ import (
 	"github.com/ggorockee/yen-back/server/internal/config"
 	"github.com/ggorockee/yen-back/server/internal/httpapi"
 	"github.com/ggorockee/yen-back/server/internal/koreaexim"
+	"github.com/ggorockee/yen-back/server/internal/places"
 	"github.com/ggorockee/yen-back/server/internal/rates"
+	"github.com/ggorockee/yen-back/server/internal/stores"
 	"github.com/ggorockee/yen-back/server/internal/telemetry"
 )
 
@@ -65,6 +67,10 @@ func run(cfg config.Config, log *slog.Logger) error {
 		store = rates.NewMemoryStore()
 	}
 
+	if _, err := stores.Load(); err != nil {
+		return err
+	}
+
 	metrics := telemetry.New(version, commit, nil)
 	svc := rates.NewService(store, koreaexim.New(cfg.KoreaEximURL, cfg.KoreaEximAPIKey), nil, log).
 		WithObserver(metrics)
@@ -74,7 +80,16 @@ func run(cfg config.Config, log *slog.Logger) error {
 		go collectLoop(ctx, svc, cfg.CollectInterval, log)
 	}
 
-	api := httpapi.New(svc, httpapi.Options{InternalToken: cfg.InternalToken, Metrics: metrics, Log: log})
+	var searcher places.Searcher
+	if cfg.PlacesAPIKey != "" {
+		searcher = places.NewGoogleClient(cfg.PlacesAPIKey, "")
+	} else {
+		log.Warn("GOOGLE_PLACES_API_KEY is empty; branch search disabled")
+	}
+	placeSvc := places.NewService(searcher, cfg.PlacesDailyCap, nil).WithObserver(metrics)
+	metrics.RegisterPlacesDailyCalls(placeSvc.CallsToday, cfg.PlacesDailyCap)
+
+	api := httpapi.New(svc, httpapi.Options{InternalToken: cfg.InternalToken, Metrics: metrics, Log: log, Places: placeSvc})
 	metricsApp := httpapi.NewMetricsApp(metrics)
 
 	errCh := make(chan error, 2)

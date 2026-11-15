@@ -4,6 +4,8 @@
 <dict>
 	<key>GADApplicationIdentifier</key>
 	<string>$(ADMOB_APP_ID)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>매장을 추가할 때 가까운 지점(예: 돈키호테 도톤보리점)을 찾아 보여드리기 위해 현재 위치를 사용합니다. 위치는 저장하지 않습니다.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>면세 환급 영수증을 촬영해 기기에 저장하기 위해 카메라를 사용합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

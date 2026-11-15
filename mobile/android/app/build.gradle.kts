@@ -5,8 +5,9 @@ plugins {
 }
 
 android {
-    namespace = "com.ggorockee.yen_back"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.woohalabs.yenback"
+    // androidx.core 1.19 (via flutter_local_notifications, geolocator) requires 37; same as reviewmaps.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -17,7 +18,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ggorockee.yen_back"
+        applicationId = "com.woohalabs.yenback"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

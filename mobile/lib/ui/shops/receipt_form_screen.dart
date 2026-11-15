@@ -77,7 +77,8 @@ class _ReceiptFormScreenState extends ConsumerState<ReceiptFormScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('영수증 등록')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        // Keep the last element (save button) clear of the home indicator.
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.paddingOf(context).bottom),
         children: [
           AspectRatio(
             aspectRatio: 3 / 4,

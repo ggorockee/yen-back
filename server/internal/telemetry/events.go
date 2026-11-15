@@ -12,6 +12,7 @@ var AllowedEvents = map[string]bool{
 	"checklist_completed":  true,
 	"remove_ads_purchased": true,
 	"onboarding_completed": true,
+	"branch_picked":        true,
 }
 
 const (
