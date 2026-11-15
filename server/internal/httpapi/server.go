@@ -15,6 +15,7 @@ import (
 
 	"github.com/ggorockee/yen-back/server/internal/rates"
 	"github.com/ggorockee/yen-back/server/internal/rules"
+	"github.com/ggorockee/yen-back/server/internal/stores"
 	"github.com/ggorockee/yen-back/server/internal/telemetry"
 )
 
@@ -110,6 +111,12 @@ func New(svc RateService, opt Options) *fiber.App {
 	v1.Get("/rules", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderCacheControl, "public, max-age=3600")
 		return c.JSON(rules.Current)
+	})
+	v1.Get("/stores", func(c *fiber.Ctx) error {
+		// The catalog changes rarely; let the app and CDNs cache it for a day.
+		c.Set(fiber.HeaderCacheControl, "public, max-age=86400")
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		return c.Send(stores.Raw())
 	})
 	v1.Post("/events", func(c *fiber.Ctx) error {
 		var req eventsRequest

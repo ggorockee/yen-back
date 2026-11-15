@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -121,5 +122,24 @@ func TestInternalCollectAuth(t *testing.T) {
 	failing := &fakeService{collectErr: errors.New("upstream")}
 	if resp, _ := do(t, failing, "secret", newReq("secret")); resp.StatusCode != http.StatusBadGateway {
 		t.Errorf("upstream error: status = %d, want 502", resp.StatusCode)
+	}
+}
+
+func TestStores(t *testing.T) {
+	resp, body := do(t, &fakeService{}, "", httptest.NewRequest(http.MethodGet, "/v1/stores", nil))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	var got struct {
+		Stores []struct {
+			ID string `json:"id"`
+			Ko string `json:"ko"`
+		} `json:"stores"`
+	}
+	if err := json.Unmarshal([]byte(body), &got); err != nil || len(got.Stores) == 0 {
+		t.Fatalf("body = %.200s err = %v", body, err)
+	}
+	if !strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+		t.Errorf("content-type = %q", resp.Header.Get("Content-Type"))
 	}
 }

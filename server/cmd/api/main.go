@@ -13,6 +13,7 @@ import (
 	"github.com/ggorockee/yen-back/server/internal/httpapi"
 	"github.com/ggorockee/yen-back/server/internal/koreaexim"
 	"github.com/ggorockee/yen-back/server/internal/rates"
+	"github.com/ggorockee/yen-back/server/internal/stores"
 	"github.com/ggorockee/yen-back/server/internal/telemetry"
 )
 
@@ -63,6 +64,10 @@ func run(cfg config.Config, log *slog.Logger) error {
 	} else {
 		log.Warn("DATABASE_URL is empty; using in-memory store")
 		store = rates.NewMemoryStore()
+	}
+
+	if _, err := stores.Load(); err != nil {
+		return err
 	}
 
 	metrics := telemetry.New(version, commit, nil)
