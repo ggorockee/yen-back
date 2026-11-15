@@ -4,7 +4,9 @@ package httpapi
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/ggorockee/yen-back/server/internal/places"
 	"github.com/ggorockee/yen-back/server/internal/rates"
 	"github.com/ggorockee/yen-back/server/internal/rules"
 	"github.com/ggorockee/yen-back/server/internal/stores"
@@ -32,7 +35,14 @@ type Options struct {
 	// InternalToken guards /internal/*; when empty the internal endpoints are disabled.
 	InternalToken string
 	Metrics       *telemetry.Metrics
-	Log           *slog.Logger
+	// Places searches chain branches; nil disables /v1/places/search.
+	Places PlaceSearcher
+	Log    *slog.Logger
+}
+
+// PlaceSearcher is the subset of places.Service the handlers need.
+type PlaceSearcher interface {
+	Search(ctx context.Context, query string, lat, lng float64) ([]places.Place, error)
 }
 
 // LatestResponse is the body of GET /v1/rates/latest.
@@ -117,6 +127,31 @@ func New(svc RateService, opt Options) *fiber.App {
 		c.Set(fiber.HeaderCacheControl, "public, max-age=86400")
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		return c.Send(stores.Raw())
+	})
+	v1.Get("/places/search", func(c *fiber.Ctx) error {
+		if opt.Places == nil {
+			return fiber.NewError(fiber.StatusServiceUnavailable, "branch search disabled")
+		}
+		lat, errLat := strconv.ParseFloat(c.Query("lat"), 64)
+		lng, errLng := strconv.ParseFloat(c.Query("lng"), 64)
+		if errLat != nil || errLng != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "lat and lng are required")
+		}
+		found, err := opt.Places.Search(c.UserContext(), c.Query("q"), lat, lng)
+		switch {
+		case errors.Is(err, places.ErrInvalid):
+			return fiber.NewError(fiber.StatusBadRequest, "invalid query or location")
+		case errors.Is(err, places.ErrDisabled):
+			return fiber.NewError(fiber.StatusServiceUnavailable, "branch search disabled")
+		case errors.Is(err, places.ErrLimited):
+			return fiber.NewError(fiber.StatusTooManyRequests, "branch search temporarily unavailable")
+		case err != nil:
+			opt.Log.Warn("places search failed", "err", err)
+			return fiber.NewError(fiber.StatusBadGateway, "branch search failed")
+		}
+		// Location-specific: cache only on the device.
+		c.Set(fiber.HeaderCacheControl, "private, max-age=300")
+		return c.JSON(fiber.Map{"places": found})
 	})
 	v1.Post("/events", func(c *fiber.Ctx) error {
 		var req eventsRequest

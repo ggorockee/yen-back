@@ -38,6 +38,8 @@ type Metrics struct {
 	lastRun       prometheus.Gauge
 	lastSuccess   prometheus.Gauge
 	rateKRW       *prometheus.GaugeVec
+	placesReqs    *prometheus.CounterVec
+	placesCalls   *prometheus.CounterVec
 
 	baseDate atomic.Int64 // unix seconds of the latest snapshot's base date, 0 = none
 	now      func() time.Time
@@ -103,9 +105,19 @@ func New(version, commit string, now func() time.Time) *Metrics {
 		Namespace: namespace, Name: "exchange_rate_krw", Help: "Latest KRW per 1 unit of the currency.",
 	}, []string{"currency"})
 
+	m.placesReqs = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace, Name: "places_requests_total",
+		Help: "Branch searches by outcome (hit, miss, limited, out_of_area, invalid, error, disabled).",
+	}, []string{"result"})
+	m.placesCalls = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace, Name: "places_upstream_calls_total",
+		Help: "Billable Google Places API calls by result (ok, error).",
+	}, []string{"result"})
+
 	for _, c := range []prometheus.Collector{
 		m.httpRequests, m.httpDuration, m.httpInFlight, m.appRequests, m.appEvents, m.eventsReject,
 		m.collectorRuns, m.upstream, m.collectorDur, m.lastRun, m.lastSuccess, m.rateKRW,
+		m.placesReqs, m.placesCalls,
 	} {
 		f(c)
 	}
@@ -121,6 +133,11 @@ func New(version, commit string, now func() time.Time) *Metrics {
 	}, m.rateAgeDays))
 
 	// Pre-create common series so absent() and rate() behave from the first scrape.
+	for _, s := range []string{"hit", "miss", "limited", "out_of_area", "invalid", "error", "disabled"} {
+		m.placesReqs.WithLabelValues(s)
+	}
+	m.placesCalls.WithLabelValues("ok")
+	m.placesCalls.WithLabelValues("error")
 	for _, s := range []string{"ok", "empty", "error"} {
 		m.collectorRuns.WithLabelValues(s)
 		m.upstream.WithLabelValues(s)
@@ -179,6 +196,21 @@ func (m *Metrics) Snapshot(s rates.Snapshot) {
 	for code, r := range s.Rates {
 		m.rateKRW.WithLabelValues(code).Set(r.KRWPerUnit)
 	}
+}
+
+// --- places.Observer ---
+
+func (m *Metrics) PlacesRequest(result string)  { m.placesReqs.WithLabelValues(result).Inc() }
+func (m *Metrics) PlacesUpstream(result string) { m.placesCalls.WithLabelValues(result).Inc() }
+
+// RegisterPlacesDailyCalls exposes today's billable call count read at scrape time.
+func (m *Metrics) RegisterPlacesDailyCalls(f func() int, limit int) {
+	m.Registry.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: namespace, Name: "places_daily_calls", Help: "Google Places calls made today (KST).",
+	}, func() float64 { return float64(f()) }))
+	m.Registry.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: namespace, Name: "places_daily_limit", Help: "Configured daily cap for Google Places calls.",
+	}, func() float64 { return float64(limit) }))
 }
 
 // --- label normalization ---
