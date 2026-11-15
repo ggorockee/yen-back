@@ -107,7 +107,7 @@ func New(version, commit string, now func() time.Time) *Metrics {
 
 	m.placesReqs = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace, Name: "places_requests_total",
-		Help: "Branch searches by outcome (hit, miss, limited, out_of_area, invalid, error, disabled).",
+		Help: "Branch searches by outcome (ok, limited, out_of_area, invalid, error, disabled).",
 	}, []string{"result"})
 	m.placesCalls = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace, Name: "places_upstream_calls_total",
@@ -133,7 +133,7 @@ func New(version, commit string, now func() time.Time) *Metrics {
 	}, m.rateAgeDays))
 
 	// Pre-create common series so absent() and rate() behave from the first scrape.
-	for _, s := range []string{"hit", "miss", "limited", "out_of_area", "invalid", "error", "disabled"} {
+	for _, s := range []string{"ok", "limited", "out_of_area", "invalid", "error", "disabled"} {
 		m.placesReqs.WithLabelValues(s)
 	}
 	m.placesCalls.WithLabelValues("ok")

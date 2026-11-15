@@ -51,7 +51,7 @@ func TestPlacesSearch(t *testing.T) {
 	if len(got.Places) != 1 || got.Places[0].DistanceM != 150 {
 		t.Errorf("body = %s", body)
 	}
-	if h.Get("Cache-Control") != "private, max-age=300" {
+	if h.Get("Cache-Control") != "no-store" {
 		t.Errorf("cache-control = %q", h.Get("Cache-Control"))
 	}
 }

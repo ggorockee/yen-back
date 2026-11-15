@@ -19,7 +19,7 @@ type Config struct {
 	MetricsPort     string        // METRICS_PORT, default 9090; serves /metrics only
 	LogLevel        string        // LOG_LEVEL: debug, info (default), warn, error
 	PlacesAPIKey    string        // GOOGLE_PLACES_API_KEY, empty = branch search disabled
-	PlacesDailyCap  int           // PLACES_DAILY_LIMIT, default 1000 billable calls per KST day
+	PlacesDailyCap  int           // PLACES_DAILY_LIMIT, default 160 billable calls per KST day (160 x 31 < 5,000 free/month)
 }
 
 // Load reads the configuration from the environment.
@@ -33,7 +33,7 @@ func Load() (Config, error) {
 		MetricsPort:     getenv("METRICS_PORT", "9090"),
 		LogLevel:        getenv("LOG_LEVEL", "info"),
 		PlacesAPIKey:    os.Getenv("GOOGLE_PLACES_API_KEY"),
-		PlacesDailyCap:  1000,
+		PlacesDailyCap:  160,
 	}
 	if v := os.Getenv("PLACES_DAILY_LIMIT"); v != "" {
 		n, err := strconv.Atoi(v)

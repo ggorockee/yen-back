@@ -149,8 +149,8 @@ func New(svc RateService, opt Options) *fiber.App {
 			opt.Log.Warn("places search failed", "err", err)
 			return fiber.NewError(fiber.StatusBadGateway, "branch search failed")
 		}
-		// Location-specific: cache only on the device.
-		c.Set(fiber.HeaderCacheControl, "private, max-age=300")
+		// Google terms: Places content must not be cached anywhere.
+		c.Set(fiber.HeaderCacheControl, "no-store")
 		return c.JSON(fiber.Map{"places": found})
 	})
 	v1.Post("/events", func(c *fiber.Ctx) error {

@@ -51,31 +51,20 @@ func TestSearchDedupesSortsAndComputesDistance(t *testing.T) {
 	}
 }
 
-func TestSearchCachesPerArea(t *testing.T) {
+// Google terms forbid caching names and addresses: every search goes upstream.
+func TestSearchDoesNotCache(t *testing.T) {
 	f := &fakeSearcher{places: donki}
 	svc := NewService(f, 100, nil)
-	ctx := context.Background()
-
-	_, _ = svc.Search(ctx, "돈키호테", lat, lng)
-	_, _ = svc.Search(ctx, " 돈키 호테 ", lat+0.001, lng+0.001) // same ~1km cell, spacing ignored
-	if f.calls != 1 {
-		t.Fatalf("upstream calls = %d, want 1 (cache hit)", f.calls)
+	for range 3 {
+		if _, err := svc.Search(context.Background(), "돈키호테", lat, lng); err != nil {
+			t.Fatal(err)
+		}
 	}
-	_, _ = svc.Search(ctx, "돈키호테", lat+0.05, lng)
-	if f.calls != 2 {
-		t.Fatalf("upstream calls = %d, want 2 (different area)", f.calls)
+	if f.calls != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (no caching)", f.calls)
 	}
-}
-
-func TestSearchCacheExpires(t *testing.T) {
-	now := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
-	f := &fakeSearcher{places: donki}
-	svc := NewService(f, 100, func() time.Time { return now })
-	_, _ = svc.Search(context.Background(), "돈키호테", lat, lng)
-	now = now.Add(25 * time.Hour)
-	_, _ = svc.Search(context.Background(), "돈키호테", lat, lng)
-	if f.calls != 2 {
-		t.Fatalf("calls = %d, want 2 after TTL", f.calls)
+	if svc.CallsToday() != 3 {
+		t.Errorf("CallsToday = %d", svc.CallsToday())
 	}
 }
 
@@ -125,7 +114,7 @@ func TestInvalidAndDisabled(t *testing.T) {
 	}
 }
 
-func TestUpstreamErrorNotCached(t *testing.T) {
+func TestUpstreamErrorThenSuccess(t *testing.T) {
 	f := &fakeSearcher{err: errors.New("boom")}
 	svc := NewService(f, 100, nil)
 	_, _ = svc.Search(context.Background(), "q", lat, lng)

@@ -1,15 +1,18 @@
 // Package places finds nearby branches of a store chain via Google Places API
 // (New) Text Search, so the app can show "돈키호테 도톤보리점 · 350m".
 //
-// Cost control: results are cached per (query, ~1km area) for a day, calls
-// outside Japan never reach Google, and a daily cap stops upstream calls once
-// reached. The user's location is used only for the request and never logged
-// or stored beyond the coarse cache key.
+// Cost control: calls outside Japan never reach Google, and a daily cap (KST)
+// stops upstream calls once reached; with the default of 160 a month stays
+// inside the 5,000 free Text Search Pro calls. The app calls this once per
+// shop added (when a chain is picked), not per keystroke.
+//
+// Terms: Google Maps Platform terms do not allow caching Places content such
+// as names and addresses, so results are never cached or stored here. The
+// user's location is used only for the request and never logged or stored.
 package places
 
 import (
 	"bytes"
-	"container/list"
 	"context"
 	"encoding/json"
 	"errors"
@@ -47,7 +50,7 @@ type Place struct {
 
 // Observer receives telemetry. Implemented by telemetry.Metrics.
 type Observer interface {
-	PlacesRequest(result string) // hit, miss, limited, out_of_area, invalid, error, disabled
+	PlacesRequest(result string) // ok, limited, out_of_area, invalid, error, disabled
 	PlacesUpstream(result string)
 }
 
@@ -149,26 +152,17 @@ func (g *GoogleClient) SearchText(ctx context.Context, query string, lat, lng fl
 	return places, nil
 }
 
-// Service adds validation, caching and the daily cap around a Searcher.
+// Service adds validation, the Japan check and the daily cap around a Searcher.
+// It deliberately has no result cache (see the package comment).
 type Service struct {
 	searcher   Searcher
 	dailyLimit int
 	now        func() time.Time
 	obs        Observer
 
-	mu       sync.Mutex
-	cache    map[string]*list.Element
-	order    *list.List // front = most recent
-	maxItems int
-	ttl      time.Duration
-	day      string
-	calls    int
-}
-
-type cacheEntry struct {
-	key    string
-	places []Place
-	at     time.Time
+	mu    sync.Mutex
+	day   string
+	calls int
 }
 
 // NewService returns a Service. A nil searcher disables search.
@@ -178,7 +172,6 @@ func NewService(s Searcher, dailyLimit int, now func() time.Time) *Service {
 	}
 	return &Service{
 		searcher: s, dailyLimit: dailyLimit, now: now, obs: nopObserver{},
-		cache: map[string]*list.Element{}, order: list.New(), maxItems: 5000, ttl: 24 * time.Hour,
 	}
 }
 
@@ -240,11 +233,6 @@ func (s *Service) Search(ctx context.Context, query string, lat, lng float64) ([
 		return []Place{}, nil
 	}
 
-	key := cacheKey(query, lat, lng)
-	if places, ok := s.cached(key); ok {
-		s.obs.PlacesRequest("hit")
-		return withDistance(places, lat, lng), nil
-	}
 	if !s.takeCall() {
 		s.obs.PlacesRequest("limited")
 		return nil, ErrLimited
@@ -257,41 +245,8 @@ func (s *Service) Search(ctx context.Context, query string, lat, lng float64) ([
 		return nil, err
 	}
 	s.obs.PlacesUpstream("ok")
-	s.obs.PlacesRequest("miss")
-	places = dedupe(places)
-	s.store(key, places)
-	return withDistance(places, lat, lng), nil
-}
-
-func (s *Service) cached(key string) ([]Place, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	el, ok := s.cache[key]
-	if !ok {
-		return nil, false
-	}
-	e := el.Value.(*cacheEntry)
-	if s.now().Sub(e.at) > s.ttl {
-		s.order.Remove(el)
-		delete(s.cache, key)
-		return nil, false
-	}
-	s.order.MoveToFront(el)
-	return e.places, true
-}
-
-func (s *Service) store(key string, places []Place) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if el, ok := s.cache[key]; ok {
-		s.order.Remove(el)
-	}
-	s.cache[key] = s.order.PushFront(&cacheEntry{key: key, places: places, at: s.now()})
-	for s.order.Len() > s.maxItems {
-		oldest := s.order.Back()
-		s.order.Remove(oldest)
-		delete(s.cache, oldest.Value.(*cacheEntry).key)
-	}
+	s.obs.PlacesRequest("ok")
+	return withDistance(dedupe(places), lat, lng), nil
 }
 
 // takeCall reserves one upstream call under the daily (KST) cap.
@@ -311,13 +266,6 @@ func (s *Service) takeCall() bool {
 var kst = time.FixedZone("KST", 9*60*60)
 
 func kstDay(t time.Time) string { return t.In(kst).Format(time.DateOnly) }
-
-// cacheKey rounds the location to 0.01° (~1km) so nearby users share results
-// and the stored key never holds a precise position.
-func cacheKey(query string, lat, lng float64) string {
-	q := strings.ToLower(strings.Join(strings.Fields(query), ""))
-	return fmt.Sprintf("%s|%.2f|%.2f", q, lat, lng)
-}
 
 // sameStoreM is the distance under which two results are treated as one store.
 const sameStoreM = 30.0
