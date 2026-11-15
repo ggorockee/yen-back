@@ -17,6 +17,7 @@ import '../services/analytics.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
+import '../services/receipt_ocr.dart';
 
 // Dependencies created in main() and injected with overrides.
 
@@ -306,3 +307,5 @@ final recentShopNamesProvider = Provider<List<String>>((ref) {
 });
 
 final locationServiceProvider = Provider<LocationService>((_) => DeviceLocationService());
+
+final receiptOcrProvider = Provider<ReceiptOcr>((_) => PlatformReceiptOcr());

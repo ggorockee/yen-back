@@ -21,7 +21,9 @@ enum AppEvent {
   checklistCompleted('checklist_completed'),
   removeAdsPurchased('remove_ads_purchased'),
   onboardingCompleted('onboarding_completed'),
-  branchPicked('branch_picked');
+  branchPicked('branch_picked'),
+  receiptScanned('receipt_scanned'),
+  receiptScanEmpty('receipt_scan_empty');
 
   const AppEvent(this.wire);
   final String wire;
