@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
@@ -16,12 +17,13 @@ import 'state/providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final (prefs, db, files, notifications, info, _) = await (
+  final (prefs, db, files, notifications, info, storesJson, _) = await (
     SharedPreferences.getInstance(),
     AppDatabase.open(),
     ReceiptFiles.open(),
     NotificationService.init(),
     PackageInfo.fromPlatform(),
+    rootBundle.loadString('assets/stores.json'),
     initializeDateFormatting('ko_KR'),
   ).wait;
 
@@ -34,6 +36,7 @@ Future<void> main() async {
       databaseProvider.overrideWithValue(db),
       receiptFilesProvider.overrideWithValue(files),
       notificationsProvider.overrideWithValue(notifications),
+      bundledStoresJsonProvider.overrideWithValue(storesJson),
       httpClientProvider.overrideWithValue(AppHttpClient(http.Client(), appVersion: info.version)),
     ],
   );

@@ -63,6 +63,7 @@ void main() {
           databaseProvider.overrideWithValue(db!),
           receiptFilesProvider.overrideWithValue(ReceiptFiles(Directory.systemTemp)),
           notificationsProvider.overrideWithValue(NotificationService(FlutterLocalNotificationsPlugin())),
+          bundledStoresJsonProvider.overrideWithValue(File('assets/stores.json').readAsStringSync()),
           httpClientProvider.overrideWithValue(client),
           purchasesProvider.overrideWithValue(_FakePurchases()),
         ],
@@ -92,8 +93,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('새 매장'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextField, '매장 이름'), '돈키호테');
-    await tester.pump();
+    // Suggestions appear on focus; typing an alias narrows to the chain.
+    expect(find.text('빅카메라'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, '매장 이름'), '돈키');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('돈키호테').last);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '돈키호테 '), findsOneWidget);
     await tester.tap(find.text('저장'));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pumpAndSettle();

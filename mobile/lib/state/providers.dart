@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/rules.dart';
+import '../core/store_catalog.dart';
 import '../core/tax.dart';
 import '../core/trip_summary.dart';
 import '../data/app_database.dart';
@@ -257,4 +258,48 @@ final purchasesProvider = Provider<Purchases>((ref) {
   );
   ref.onDispose(p.dispose);
   return p;
+});
+
+// Store catalog for the shop name field
+
+/// The bundled assets/stores.json, loaded in main() for offline first launch.
+final bundledStoresJsonProvider = Provider<String>((_) => '{"version":"","stores":[]}');
+
+class StoreCatalogNotifier extends Notifier<StoreCatalog> {
+  @override
+  StoreCatalog build() {
+    final repo = ref.watch(remoteRepositoryProvider);
+    Future.microtask(refresh);
+    for (final raw in [repo.cachedStoresJson(), ref.watch(bundledStoresJsonProvider)]) {
+      if (raw == null) continue;
+      try {
+        final c = StoreCatalog.parse(raw);
+        if (c.brands.isNotEmpty) return c;
+      } catch (_) {
+        // Fall through to the next source.
+      }
+    }
+    return StoreCatalog.empty;
+  }
+
+  Future<void> refresh() async {
+    try {
+      final c = await ref.read(remoteRepositoryProvider).fetchStores();
+      if (ref.mounted) state = c;
+    } catch (_) {
+      // Keep cached or bundled catalog.
+    }
+  }
+}
+
+final storeCatalogProvider = NotifierProvider<StoreCatalogNotifier, StoreCatalog>(StoreCatalogNotifier.new);
+
+/// Distinct shop names the user has entered, most recent first.
+final recentShopNamesProvider = Provider<List<String>>((ref) {
+  final entries = ref.watch(entriesProvider).value ?? const <ShopEntry>[];
+  final seen = <String>{};
+  return [
+    for (final e in entries)
+      if (seen.add(e.shop.name)) e.shop.name,
+  ];
 });

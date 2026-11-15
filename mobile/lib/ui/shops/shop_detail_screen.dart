@@ -53,7 +53,8 @@ class ShopDetailScreen extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        // Keep the last element (save button) clear of the home indicator.
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.paddingOf(context).bottom),
         children: [
           Card(
             child: Padding(

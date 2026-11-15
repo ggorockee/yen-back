@@ -54,7 +54,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         child: Column(
           children: [
             const RateInfoBar(),
-            const BannerAdBox(),
+            const BannerAdBox(compact: true),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -78,25 +78,42 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    FittedBox(
-                      alignment: Alignment.centerRight,
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        _digits.isEmpty ? '¥0' : yen(_amount),
-                        style: theme.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w700),
+                    // Scales down instead of overflowing on short screens or
+                    // when a taller banner is shown.
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            width: constraints.maxWidth,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                FittedBox(
+                                  alignment: Alignment.centerRight,
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _digits.isEmpty ? '¥0' : yen(_amount),
+                                    style: theme.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                Text(
+                                  '결제 금액 ${krw(b.inclTax)}',
+                                  textAlign: TextAlign.right,
+                                  style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.primary),
+                                ),
+                                const SizedBox(height: 12),
+                                _line('세전', '${yen(b.exclTax)} · ${krw(b.exclTax)}'),
+                                _line('소비세 ($rate%)', '${yen(b.tax)} · ${krw(b.tax)}'),
+                                _line('세금 포함', '${yen(b.inclTax)} · ${krw(b.inclTax)}'),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    Text(
-                      '결제 금액 ${krw(b.inclTax)}',
-                      textAlign: TextAlign.right,
-                      style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.primary),
-                    ),
-                    const SizedBox(height: 12),
-                    _line('세전', '${yen(b.exclTax)} · ${krw(b.exclTax)}'),
-                    _line('소비세 ($rate%)', '${yen(b.tax)} · ${krw(b.tax)}'),
-                    _line('세금 포함', '${yen(b.inclTax)} · ${krw(b.inclTax)}'),
-                    const Spacer(),
                   ],
                 ),
               ),

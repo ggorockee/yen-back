@@ -90,7 +90,11 @@ class InterstitialController {
 /// Adaptive anchored banner. Collapses to nothing for ad-free users or when
 /// no ad loads (offline), so it never leaves an empty gap.
 class BannerAdBox extends ConsumerStatefulWidget {
-  const BannerAdBox({super.key});
+  const BannerAdBox({super.key, this.compact = false});
+
+  /// Uses the fixed 320x50 banner instead of a large adaptive one, for screens
+  /// where vertical space matters (the calculator).
+  final bool compact;
 
   @override
   ConsumerState<BannerAdBox> createState() => _BannerAdBoxState();
@@ -111,7 +115,7 @@ class _BannerAdBoxState extends ConsumerState<BannerAdBox> {
   }
 
   Future<void> _load(int width) async {
-    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
+    final size = widget.compact ? AdSize.banner : await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
     if (!mounted || size == null) return;
     final ad = BannerAd(
       adUnitId: AppConfig.bannerAdUnitId,
