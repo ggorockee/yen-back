@@ -1,4 +1,4 @@
-package com.ggorockee.yen_back
+package com.woohalabs.yenback
 
 import io.flutter.embedding.android.FlutterActivity
 
