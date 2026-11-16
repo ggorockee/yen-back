@@ -46,9 +46,13 @@ class InterstitialController {
   final InterstitialPolicy _policy;
   InterstitialAd? _ad;
   bool _loading = false;
+  bool _enabled = false;
+
+  /// Allows ad requests; called once consent permits ads.
+  void enable() => _enabled = true;
 
   void preload() {
-    if (_ad != null || _loading) return;
+    if (!_enabled || _ad != null || _loading) return;
     _loading = true;
     InterstitialAd.load(
       adUnitId: AppConfig.interstitialAdUnitId,
@@ -115,6 +119,7 @@ class _BannerAdBoxState extends ConsumerState<BannerAdBox> {
   }
 
   Future<void> _load(int width) async {
+    if (!await ref.read(adsReadyProvider) || !mounted) return;
     final size = widget.compact ? AdSize.banner : await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
     if (!mounted || size == null) return;
     final ad = BannerAd(

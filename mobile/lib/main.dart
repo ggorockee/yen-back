@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'data/app_database.dart';
 import 'data/receipt_files.dart';
+import 'services/ad_consent.dart';
 import 'services/analytics.dart';
 import 'services/notification_service.dart';
 import 'state/providers.dart';
@@ -27,8 +29,9 @@ Future<void> main() async {
     initializeDateFormatting('ko_KR'),
   ).wait;
 
-  // Ads must never block startup; the SDK initializes in the background.
-  MobileAds.instance.initialize();
+  // Ads must never block startup. Consent (EEA/UK/CH) is asked after the first
+  // frame, since the form needs a visible screen; ads load once it resolves.
+  final adsReady = Completer<bool>();
 
   final container = ProviderContainer(
     overrides: [
@@ -38,6 +41,7 @@ Future<void> main() async {
       notificationsProvider.overrideWithValue(notifications),
       bundledStoresJsonProvider.overrideWithValue(storesJson),
       httpClientProvider.overrideWithValue(AppHttpClient(http.Client(), appVersion: info.version)),
+      adsReadyProvider.overrideWithValue(adsReady.future),
     ],
   );
   container.read(analyticsProvider).track(AppEvent.appOpen);
@@ -49,6 +53,9 @@ Future<void> main() async {
       child: const _Lifecycle(child: YenBackApp()),
     ),
   );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    adsReady.complete(AdConsent.gatherAndStartAds().catchError((Object _) => false));
+  });
 }
 
 /// Flushes pending activity events when the app goes to the background.
