@@ -19,7 +19,6 @@ enum AppEvent {
   receiptAdded('receipt_added'),
   departureSet('departure_set'),
   checklistCompleted('checklist_completed'),
-  removeAdsPurchased('remove_ads_purchased'),
   onboardingCompleted('onboarding_completed'),
   branchPicked('branch_picked'),
   receiptScanned('receipt_scanned'),

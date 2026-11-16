@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,12 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config.dart';
 import '../../core/format.dart';
 import '../../services/ad_consent.dart';
-import '../../services/purchase_service.dart';
 import '../../state/providers.dart';
-import '../widgets.dart';
 import 'trip_form_sheet.dart';
 
-/// S7: trip, purchases, regulation sources and privacy.
+/// S7: trip, exchange rates, regulation sources and privacy.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -21,38 +17,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  late final Purchases _purchases = ref.read(purchasesProvider);
-  StreamSubscription<String>? _messages;
-  String? _price;
   bool _adPrivacyOptions = false;
 
   @override
   void initState() {
     super.initState();
-    _messages = _purchases.messages.listen((m) {
-      if (mounted) showSnack(context, m);
-    });
     // Only users under a consent regulation (EEA/UK/CH) get the entry.
     ref.read(adsReadyProvider).then((_) => AdConsent.privacyOptionsRequired()).then((required) {
       if (mounted && required) setState(() => _adPrivacyOptions = true);
     }, onError: (Object _) {});
-    if (AppConfig.iapEnabled) {
-      _purchases.price().then((p) {
-        if (mounted) setState(() => _price = p);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _messages?.cancel();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final trip = ref.watch(tripProvider).value;
-    final adFree = ref.watch(adFreeProvider);
     final rules = ref.watch(rulesProvider);
     final rates = ref.watch(ratesProvider);
 
@@ -67,19 +45,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(trip?.departureAt == null ? '미입력' : dateTimeLabel(trip!.departureAt!)),
             onTap: () => showTripFormSheet(context),
           ),
-          if (AppConfig.iapEnabled) ...[
-            const _Header('광고'),
-            if (adFree)
-              const ListTile(leading: Icon(Icons.verified_outlined), title: Text('광고 제거 적용됨'))
-            else
-              ListTile(
-                leading: const Icon(Icons.block),
-                title: const Text('광고 제거 (1회 결제)'),
-                subtitle: Text(_price ?? '스토어 연결 중…'),
-                onTap: _purchases.buy,
-              ),
-            ListTile(leading: const Icon(Icons.restore), title: const Text('구매 복원'), onTap: _purchases.restore),
-          ],
           const _Header('환율'),
           ListTile(
             leading: const Icon(Icons.currency_exchange),

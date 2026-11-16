@@ -16,7 +16,6 @@ import 'package:yen_back/data/receipt_files.dart';
 import 'package:yen_back/services/analytics.dart';
 import 'package:yen_back/services/location_service.dart';
 import 'package:yen_back/services/notification_service.dart';
-import 'package:yen_back/services/purchase_service.dart';
 import 'package:yen_back/state/providers.dart';
 
 void main() {
@@ -79,7 +78,6 @@ void main() {
           notificationsProvider.overrideWithValue(NotificationService(FlutterLocalNotificationsPlugin())),
           bundledStoresJsonProvider.overrideWithValue(File('assets/stores.json').readAsStringSync()),
           httpClientProvider.overrideWithValue(client),
-          purchasesProvider.overrideWithValue(_FakePurchases()),
           locationServiceProvider.overrideWithValue(_FakeLocation()),
         ],
         child: const YenBackApp(),
@@ -149,21 +147,6 @@ void main() {
 
     await tester.runAsync(() => db.close());
   });
-}
-
-class _FakePurchases implements Purchases {
-  @override
-  void start() {}
-  @override
-  Future<String?> price() async => '₩2,200';
-  @override
-  Future<void> buy() async {}
-  @override
-  Future<void> restore() async {}
-  @override
-  Stream<String> get messages => const Stream.empty();
-  @override
-  Future<void> dispose() async {}
 }
 
 class _FakeLocation implements LocationService {

@@ -26,7 +26,7 @@ Future<int?> showShopFormDialog(BuildContext context, WidgetRef ref, {Shop? exis
   }
   final id = await notifier.addShop(name, date);
   ref.read(analyticsProvider).track(AppEvent.shopCreated);
-  ref.read(interstitialProvider).maybeShow(adFree: ref.read(adFreeProvider));
+  ref.read(interstitialProvider).maybeShow();
   return id;
 }
 

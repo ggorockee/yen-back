@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/rules.dart';
@@ -16,7 +15,6 @@ import '../services/ads.dart';
 import '../services/analytics.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
-import '../services/purchase_service.dart';
 import '../services/receipt_ocr.dart';
 
 // Dependencies created in main() and injected with overrides.
@@ -34,13 +32,13 @@ final remoteRepositoryProvider = Provider<RemoteRepository>(
 /// true when ads may be requested. Overridden in main; tests never load ads.
 final adsReadyProvider = Provider<Future<bool>>((_) => Future.value(false));
 
-/// Preloads only for users who see ads; ad-free users never request one.
+/// Preloads an interstitial once consent allows ads.
 final interstitialProvider = Provider<InterstitialController>((ref) {
   final c = InterstitialController(InterstitialPolicy(sessionStart: DateTime.now()));
   ref.read(adsReadyProvider).then((ok) {
     if (!ok) return;
     c.enable();
-    if (!ref.read(adFreeProvider)) c.preload();
+    c.preload();
   });
   return c;
 });
@@ -60,20 +58,6 @@ class OnboardingNotifier extends Notifier<bool> {
 }
 
 final onboardingDoneProvider = NotifierProvider<OnboardingNotifier, bool>(OnboardingNotifier.new);
-
-class AdFreeNotifier extends Notifier<bool> {
-  static const _key = 'purchase.ad_free';
-
-  @override
-  bool build() => ref.watch(prefsProvider).getBool(_key) ?? false;
-
-  Future<void> grant() async {
-    await ref.read(prefsProvider).setBool(_key, true);
-    state = true;
-  }
-}
-
-final adFreeProvider = NotifierProvider<AdFreeNotifier, bool>(AdFreeNotifier.new);
 
 // Remote data with offline cache
 
@@ -252,22 +236,6 @@ final shopTotalsProvider = Provider.family<ShopTotals?, int>((ref, shopId) {
     if (s.entry.shop.id == shopId) return s;
   }
   return null;
-});
-
-/// App-wide purchase service; started in main() so pending purchases are
-/// delivered even before the settings screen is opened.
-final purchasesProvider = Provider<Purchases>((ref) {
-  final p = StorePurchases(
-    InAppPurchase.instance,
-    onEntitled: () async {
-      if (ref.read(adFreeProvider)) return false;
-      await ref.read(adFreeProvider.notifier).grant();
-      ref.read(analyticsProvider).track(AppEvent.removeAdsPurchased);
-      return true;
-    },
-  );
-  ref.onDispose(p.dispose);
-  return p;
 });
 
 // Store catalog for the shop name field

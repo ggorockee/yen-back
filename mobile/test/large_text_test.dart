@@ -19,7 +19,6 @@ import 'package:yen_back/data/models.dart';
 import 'package:yen_back/data/receipt_files.dart';
 import 'package:yen_back/services/analytics.dart';
 import 'package:yen_back/services/location_service.dart';
-import 'package:yen_back/services/purchase_service.dart';
 import 'package:yen_back/services/receipt_ocr.dart';
 import 'package:yen_back/state/providers.dart';
 
@@ -203,7 +202,6 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {required bool onboarded}) asy
         receiptFilesProvider.overrideWithValue(ReceiptFiles(Directory.systemTemp)),
         bundledStoresJsonProvider.overrideWithValue(File('assets/stores.json').readAsStringSync()),
         httpClientProvider.overrideWithValue(MockClient(_api)),
-        purchasesProvider.overrideWithValue(_FakePurchases()),
         locationServiceProvider.overrideWithValue(_FakeLocation()),
         receiptOcrProvider.overrideWithValue(_FakeOcr()),
       ],
@@ -270,19 +268,4 @@ class _FakeLocation implements LocationService {
   @override
   Future<LocationResult> current({bool request = true}) async =>
       const LocationResult(LocationStatus.ok, lat: 34.6687, lng: 135.5013);
-}
-
-class _FakePurchases implements Purchases {
-  @override
-  void start() {}
-  @override
-  Future<String?> price() async => '₩3,300';
-  @override
-  Future<void> buy() async {}
-  @override
-  Future<void> restore() async {}
-  @override
-  Stream<String> get messages => const Stream.empty();
-  @override
-  Future<void> dispose() async {}
 }
