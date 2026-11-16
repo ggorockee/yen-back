@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config.dart';
 import '../../core/format.dart';
+import '../../services/ad_consent.dart';
 import '../../services/purchase_service.dart';
 import '../../state/providers.dart';
 import '../widgets.dart';
@@ -23,6 +24,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final Purchases _purchases = ref.read(purchasesProvider);
   StreamSubscription<String>? _messages;
   String? _price;
+  bool _adPrivacyOptions = false;
 
   @override
   void initState() {
@@ -30,6 +32,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _messages = _purchases.messages.listen((m) {
       if (mounted) showSnack(context, m);
     });
+    // Only users under a consent regulation (EEA/UK/CH) get the entry.
+    ref.read(adsReadyProvider).then((_) => AdConsent.privacyOptionsRequired()).then((required) {
+      if (mounted && required) setState(() => _adPrivacyOptions = true);
+    }, onError: (Object _) {});
     if (AppConfig.iapEnabled) {
       _purchases.price().then((p) {
         if (mounted) setState(() => _price = p);
@@ -114,6 +120,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             isThreeLine: true,
           ),
+          if (_adPrivacyOptions)
+            const ListTile(
+              leading: Icon(Icons.tune),
+              title: Text('광고 개인정보 설정'),
+              subtitle: Text('맞춤 광고 동의를 변경할 수 있어요.'),
+              onTap: AdConsent.showPrivacyOptions,
+            ),
           ListTile(
             leading: const Icon(Icons.policy_outlined),
             title: const Text('개인정보처리방침'),

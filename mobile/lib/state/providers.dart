@@ -30,10 +30,18 @@ final remoteRepositoryProvider = Provider<RemoteRepository>(
   (ref) => RemoteRepository(ref.watch(prefsProvider), client: ref.watch(httpClientProvider)),
 );
 
+/// Completes once consent is resolved and the Mobile Ads SDK has started:
+/// true when ads may be requested. Overridden in main; tests never load ads.
+final adsReadyProvider = Provider<Future<bool>>((_) => Future.value(false));
+
 /// Preloads only for users who see ads; ad-free users never request one.
 final interstitialProvider = Provider<InterstitialController>((ref) {
   final c = InterstitialController(InterstitialPolicy(sessionStart: DateTime.now()));
-  if (!ref.read(adFreeProvider)) c.preload();
+  ref.read(adsReadyProvider).then((ok) {
+    if (!ok) return;
+    c.enable();
+    if (!ref.read(adFreeProvider)) c.preload();
+  });
   return c;
 });
 
