@@ -156,3 +156,16 @@ func TestPrivacy(t *testing.T) {
 		t.Fatal("privacy page body missing title")
 	}
 }
+
+func TestAppAdsTxt(t *testing.T) {
+	resp, body := do(t, &fakeService{}, "", httptest.NewRequest(http.MethodGet, "/app-ads.txt", nil))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/plain") {
+		t.Fatalf("content-type = %q", ct)
+	}
+	if want := "google.com, pub-8516861197467665, DIRECT, f08c47fec0942fa0"; !strings.Contains(body, want) {
+		t.Fatalf("body = %q, want line %q", body, want)
+	}
+}
