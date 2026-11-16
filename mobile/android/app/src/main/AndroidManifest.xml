@@ -1,10 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Nearby branch search when adding a shop (foreground only). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- In-app purchases are off (see AppConfig.iapEnabled). Drop the billing
+         permission the in_app_purchase plugin adds, so Google Play doesn't
+         treat the app as selling in-app products (Korean developers selling
+         them must register a business and an e-commerce license). -->
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove"/>
     <application
         android:label="돌려받엔"
         android:name="${applicationName}"
