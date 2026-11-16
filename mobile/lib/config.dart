@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kReleaseMode;
 
 /// Build-time configuration, set with `--dart-define`.
 ///
@@ -16,9 +16,12 @@ class AppConfig {
 
   static const removeAdsProductId = 'remove_ads';
 
-  /// The "remove ads" purchase is hidden until the product is registered in
-  /// both stores; showing a purchase that cannot complete fails store review.
-  static const iapEnabled = bool.fromEnvironment('IAP_ENABLED');
+  /// The "remove ads" purchase is sold on Google Play only. Selling on the
+  /// App Store requires a Korean business registration number on Apple's
+  /// tax form, so iOS keeps it hidden (a purchase that cannot complete fails
+  /// store review). `--dart-define=IAP_ENABLED=false` also hides it on Android.
+  static bool get iapEnabled =>
+      defaultTargetPlatform == TargetPlatform.android && const bool.fromEnvironment('IAP_ENABLED', defaultValue: true);
 
   /// Public privacy policy (served by the API server).
   static const privacyPolicyUrl = 'https://yen-back.woohalabs.com/privacy';
