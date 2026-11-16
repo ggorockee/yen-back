@@ -65,6 +65,11 @@ type eventsRequest struct {
 //go:embed privacy.html
 var privacyHTML []byte
 
+// appAdsTxt authorizes Google AdMob (publisher pub-8516861197467665) to sell
+// the app's ad inventory. AdMob crawls it from the developer website listed
+// in both app stores (https://yen-back.woohalabs.com).
+const appAdsTxt = "google.com, pub-8516861197467665, DIRECT, f08c47fec0942fa0\n"
+
 // New builds the public API app.
 func New(svc RateService, opt Options) *fiber.App {
 	if opt.Metrics == nil {
@@ -188,6 +193,12 @@ func New(svc RateService, opt Options) *fiber.App {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
 		c.Set(fiber.HeaderCacheControl, "public, max-age=3600")
 		return c.Send(privacyHTML)
+	})
+
+	app.Get("/app-ads.txt", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
+		c.Set(fiber.HeaderCacheControl, "public, max-age=3600")
+		return c.SendString(appAdsTxt)
 	})
 
 	internal := app.Group("/internal", requireToken(opt.InternalToken))
