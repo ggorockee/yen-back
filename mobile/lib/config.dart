@@ -1,7 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kReleaseMode;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kReleaseMode;
 
 /// Build-time configuration, set with `--dart-define`.
 ///
@@ -12,9 +11,7 @@ class AppConfig {
     'API_BASE_URL',
     // Release builds use production; debug builds reach a local server
     // (the Android emulator sees the host machine as 10.0.2.2).
-    defaultValue: kReleaseMode
-        ? 'https://yen-back.woohalabs.com'
-        : 'http://10.0.2.2:8080',
+    defaultValue: kReleaseMode ? 'https://yen-back.woohalabs.com' : 'http://10.0.2.2:8080',
   );
 
   static const removeAdsProductId = 'remove_ads';
@@ -24,8 +21,7 @@ class AppConfig {
   /// tax form, so iOS keeps it hidden (a purchase that cannot complete fails
   /// store review). `--dart-define=IAP_ENABLED=false` also hides it on Android.
   static bool get iapEnabled =>
-      defaultTargetPlatform == TargetPlatform.android &&
-      const bool.fromEnvironment('IAP_ENABLED', defaultValue: true);
+      defaultTargetPlatform == TargetPlatform.android && const bool.fromEnvironment('IAP_ENABLED', defaultValue: true);
 
   /// Public privacy policy (served by the API server).
   static const privacyPolicyUrl = 'https://yen-back.woohalabs.com/privacy';
