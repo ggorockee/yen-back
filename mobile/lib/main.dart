@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'config.dart';
 import 'data/app_database.dart';
 import 'data/receipt_files.dart';
 import 'services/ad_consent.dart';
@@ -45,7 +46,7 @@ Future<void> main() async {
     ],
   );
   container.read(analyticsProvider).track(AppEvent.appOpen);
-  container.read(purchasesProvider).start();
+  if (AppConfig.iapEnabled) container.read(purchasesProvider).start();
 
   runApp(
     UncontrolledProviderScope(
