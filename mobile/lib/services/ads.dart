@@ -67,12 +67,12 @@ class InterstitialController {
     );
   }
 
-  /// Call after the user finishes an action. No-op for ad-free users.
-  void maybeShow({required bool adFree}) {
+  /// Call after the user finishes an action.
+  void maybeShow() {
     final ad = _ad;
     final now = DateTime.now();
-    if (adFree || ad == null || !_policy.canShow(now)) {
-      if (!adFree) preload();
+    if (ad == null || !_policy.canShow(now)) {
+      preload();
       return;
     }
     _ad = null;
@@ -112,7 +112,7 @@ class _BannerAdBoxState extends ConsumerState<BannerAdBox> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_requested && !ref.read(adFreeProvider)) {
+    if (!_requested) {
       _requested = true;
       _load(MediaQuery.sizeOf(context).width.truncate());
     }
@@ -146,7 +146,7 @@ class _BannerAdBoxState extends ConsumerState<BannerAdBox> {
   @override
   Widget build(BuildContext context) {
     final ad = _ad;
-    if (ref.watch(adFreeProvider) || !_loaded || ad == null) return const SizedBox.shrink();
+    if (!_loaded || ad == null) return const SizedBox.shrink();
     return SafeArea(
       top: false,
       child: SizedBox(

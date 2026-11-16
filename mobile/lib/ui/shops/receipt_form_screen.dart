@@ -100,7 +100,7 @@ class _ReceiptFormScreenState extends ConsumerState<ReceiptFormScreen> {
     ref.read(analyticsProvider).track(AppEvent.receiptAdded);
     if (!mounted) return;
     Navigator.pop(context);
-    ref.read(interstitialProvider).maybeShow(adFree: ref.read(adFreeProvider));
+    ref.read(interstitialProvider).maybeShow();
   }
 
   @override

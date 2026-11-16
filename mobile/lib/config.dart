@@ -14,17 +14,6 @@ class AppConfig {
     defaultValue: kReleaseMode ? 'https://yen-back.woohalabs.com' : 'http://10.0.2.2:8080',
   );
 
-  static const removeAdsProductId = 'remove_ads';
-
-  /// The "remove ads" purchase is off on both platforms. Selling in-app
-  /// purchases from Korea requires a business registration number and an
-  /// e-commerce (통신판매업) registration on both stores (Apple's Korea tax form,
-  /// Google Play's Korean developer requirements), which the developer, an
-  /// individual, doesn't have. To turn it back on: register, re-activate the
-  /// store products, restore the BILLING permission (AndroidManifest.xml) and
-  /// build with `--dart-define=IAP_ENABLED=true`.
-  static const iapEnabled = bool.fromEnvironment('IAP_ENABLED');
-
   /// Public privacy policy (served by the API server).
   static const privacyPolicyUrl = 'https://yen-back.woohalabs.com/privacy';
 
