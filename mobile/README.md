@@ -43,6 +43,8 @@ Remote Config 값은 ../firebase/remoteconfig.template.json에서 관리하고 f
 | 버전 | ios_store_url, android_store_url | 비어 있으면 업데이트 안내를 하지 않음 |
 | 버전 | update_message | 안내 문구 (비우면 기본 문구) |
 
+Analytics 수집은 기본으로 꺼져 있고, UMP가 동의가 필요 없는 지역(EEA, 영국, 스위스 밖)이라고 판단하면 켜집니다. 유럽에서도 측정하려면 AdMob 동의 모드를 켠 뒤 lib/services/install_measurement.dart를 바꿔야 합니다.
+
 새 버전 배포 순서: 스토어 공개 확인 → latest 올림 → 필요할 때만 min 올림. 강제·선택 업데이트 노출과 반응은 서버 활동 이벤트(update_prompt_shown, force_update_shown, update_accepted, update_dismissed)로 집계됩니다.
 
 ## 개인정보
