@@ -256,7 +256,8 @@ API 응답 예시
 - [ ] Android 스토어 등록, 프로덕션 출시
 - [x] AdMob iOS 앱에 App Store 연결 (2026-11-25)
 - [ ] AdMob iOS 앱 인증과 광고 게재 제한 해제 ([admob-store-linking.md](admob-store-linking.md) 4장)
-- [ ] Google Ads 돌려받엔-iOS 캠페인과 설치 전환 측정 ([admob-store-linking.md](admob-store-linking.md) 6장)
+- [x] Google Ads 돌려받엔-iOS 캠페인 게시 (2026-11-25, 일 986원)
+- [ ] 설치 전환 측정 연결 ([admob-store-linking.md](admob-store-linking.md) 6장)
 - [ ] 블로그 포스팅 2편 발행
 
 버퍼: 심사 반려에 대비해 1주를 예비로 둠. 출시가 늦어질 것 같으면 iOS/Android 중 하나를 먼저 내는 것도 검토.
