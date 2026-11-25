@@ -116,7 +116,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(
               '매장, 상품, 영수증 사진, 출국일은 이 기기에만 저장돼요. 서버에는 환율 조회, '
               '기능 사용 횟수(개인을 식별할 수 없는 집계), 근처 지점을 찾을 때의 현재 위치만 전송되고 '
-              '위치는 저장하지 않아요. 앱을 삭제하면 모든 데이터가 지워져요.',
+              '위치는 저장하지 않아요. 설치와 앱 실행 통계는 Google Firebase로 전송돼요. '
+              '앱을 삭제하면 기기의 데이터가 지워져요.',
             ),
             isThreeLine: true,
           ),
@@ -141,6 +142,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               '실제 환급과 면세 판단은 매장·세관의 안내를 따라 주세요.',
             ),
             isThreeLine: true,
+          ),
+          ListTile(
+            leading: const Icon(Icons.smartphone),
+            title: const Text('앱 버전'),
+            subtitle: Text(ref.watch(appVersionProvider).toString()),
           ),
           ListTile(leading: const Icon(Icons.rule), title: const Text('제도 기준 버전'), subtitle: Text(rules.version)),
           const SizedBox(height: 24),

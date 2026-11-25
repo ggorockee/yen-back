@@ -19,8 +19,8 @@ class InterstitialPolicy {
   });
 
   final DateTime sessionStart;
-  final int maxPerSession;
-  final Duration minGap;
+  int maxPerSession;
+  Duration minGap;
   final Duration warmup;
 
   int _shown = 0;
@@ -48,8 +48,13 @@ class InterstitialController {
   bool _loading = false;
   bool _enabled = false;
 
-  /// Allows ad requests; called once consent permits ads.
-  void enable() => _enabled = true;
+  /// Allows ad requests; called once consent permits ads, with the frequency
+  /// limits from Remote Config.
+  void enable({int? maxPerSession, Duration? minGap}) {
+    _policy.maxPerSession = maxPerSession ?? _policy.maxPerSession;
+    _policy.minGap = minGap ?? _policy.minGap;
+    _enabled = true;
+  }
 
   void preload() {
     if (!_enabled || _ad != null || _loading) return;
@@ -120,6 +125,7 @@ class _BannerAdBoxState extends ConsumerState<BannerAdBox> {
 
   Future<void> _load(int width) async {
     if (!await ref.read(adsReadyProvider) || !mounted) return;
+    if (!(await ref.read(remoteSettingsProvider)).showBannerAd || !mounted) return;
     final size = widget.compact ? AdSize.banner : await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
     if (!mounted || size == null) return;
     final ad = BannerAd(

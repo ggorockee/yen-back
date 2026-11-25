@@ -23,7 +23,11 @@ enum AppEvent {
   onboardingCompleted('onboarding_completed'),
   branchPicked('branch_picked'),
   receiptScanned('receipt_scanned'),
-  receiptScanEmpty('receipt_scan_empty');
+  receiptScanEmpty('receipt_scan_empty'),
+  updatePromptShown('update_prompt_shown'),
+  forceUpdateShown('force_update_shown'),
+  updateAccepted('update_accepted'),
+  updateDismissed('update_dismissed');
 
   const AppEvent(this.wire);
   final String wire;

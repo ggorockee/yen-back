@@ -9,6 +9,7 @@ import 'ui/dashboard/dashboard_screen.dart';
 import 'ui/onboarding/onboarding_screen.dart';
 import 'ui/settings/settings_screen.dart';
 import 'ui/shops/shops_screen.dart';
+import 'ui/update_gate.dart';
 
 class YenBackApp extends ConsumerWidget {
   const YenBackApp({super.key});
@@ -24,7 +25,7 @@ class YenBackApp extends ConsumerWidget {
       locale: const Locale('ko', 'KR'),
       supportedLocales: const [Locale('ko', 'KR')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: onboarded ? const HomeShell() : const OnboardingScreen(),
+      home: UpdateGate(child: onboarded ? const HomeShell() : const OnboardingScreen()),
       // Honor the system text size up to 150%. Beyond that (iOS accessibility
       // sizes reach ~310%) fixed layouts like the keypad cannot fit a phone
       // screen; every screen is tested at this cap (test/large_text_test.dart).
