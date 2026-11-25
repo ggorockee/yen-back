@@ -15,6 +15,10 @@ var AllowedEvents = map[string]bool{
 	"branch_picked":        true,
 	"receipt_scanned":      true,
 	"receipt_scan_empty":   true,
+	"update_prompt_shown":  true,
+	"force_update_shown":   true,
+	"update_accepted":      true,
+	"update_dismissed":     true,
 }
 
 const (

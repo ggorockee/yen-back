@@ -10,11 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'config.dart';
+import 'core/app_version.dart';
 import 'data/app_database.dart';
 import 'data/receipt_files.dart';
 import 'services/ad_consent.dart';
 import 'services/analytics.dart';
 import 'services/notification_service.dart';
+import 'services/remote_settings.dart';
 import 'state/providers.dart';
 
 Future<void> main() async {
@@ -43,6 +45,9 @@ Future<void> main() async {
       bundledStoresJsonProvider.overrideWithValue(storesJson),
       httpClientProvider.overrideWithValue(AppHttpClient(http.Client(), appVersion: info.version)),
       adsReadyProvider.overrideWithValue(adsReady.future),
+      appVersionProvider.overrideWithValue(AppVersion.parse(info.version)),
+      // Not awaited: the app opens right away and reacts when settings arrive.
+      remoteSettingsProvider.overrideWithValue(RemoteSettings.load()),
     ],
   );
   container.read(analyticsProvider).track(AppEvent.appOpen);

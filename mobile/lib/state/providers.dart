@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_version.dart';
 import '../core/rules.dart';
 import '../core/store_catalog.dart';
 import '../core/tax.dart';
@@ -18,6 +19,7 @@ import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 import '../services/receipt_ocr.dart';
+import '../services/remote_settings.dart';
 
 // Dependencies created in main() and injected with overrides.
 
@@ -30,6 +32,12 @@ final remoteRepositoryProvider = Provider<RemoteRepository>(
   (ref) => RemoteRepository(ref.watch(prefsProvider), client: ref.watch(httpClientProvider)),
 );
 
+/// This build's version, for update checks. Overridden in main.
+final appVersionProvider = Provider<AppVersion>((_) => AppVersion.zero);
+
+/// Remote Config settings for this run. Overridden in main; tests use defaults.
+final remoteSettingsProvider = Provider<Future<RemoteSettings>>((_) => Future.value(RemoteSettings.defaults));
+
 /// Completes once consent is resolved and the Mobile Ads SDK has started:
 /// true when ads may be requested. Overridden in main; tests never load ads.
 final adsReadyProvider = Provider<Future<bool>>((_) => Future.value(false));
@@ -37,9 +45,10 @@ final adsReadyProvider = Provider<Future<bool>>((_) => Future.value(false));
 /// Preloads only for users who see ads; ad-free users never request one.
 final interstitialProvider = Provider<InterstitialController>((ref) {
   final c = InterstitialController(InterstitialPolicy(sessionStart: DateTime.now()));
-  ref.read(adsReadyProvider).then((ok) {
-    if (!ok) return;
-    c.enable();
+  (ref.read(adsReadyProvider), ref.read(remoteSettingsProvider)).wait.then((r) {
+    final (ok, settings) = r;
+    if (!ok || !settings.showInterstitialAd) return;
+    c.enable(maxPerSession: settings.interstitialMaxPerSession, minGap: settings.interstitialMinGap);
     if (!ref.read(adFreeProvider)) c.preload();
   });
   return c;

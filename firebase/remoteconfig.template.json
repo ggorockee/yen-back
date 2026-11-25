@@ -1,0 +1,69 @@
+{
+  "parameterGroups": {
+    "ads": {
+      "description": "광고 노출 제어. 앱 기본값: mobile/lib/services/remote_settings.dart",
+      "parameters": {
+        "show_banner_ad": {
+          "defaultValue": { "value": "true" },
+          "valueType": "BOOLEAN",
+          "description": "계산기, 매장, 내 여행 탭 배너"
+        },
+        "show_interstitial_ad": {
+          "defaultValue": { "value": "true" },
+          "valueType": "BOOLEAN",
+          "description": "매장, 영수증 저장 후 전면 광고"
+        },
+        "interstitial_max_per_session": {
+          "defaultValue": { "value": "2" },
+          "valueType": "NUMBER",
+          "description": "세션당 전면 광고 최대 횟수 (음수면 2)"
+        },
+        "interstitial_min_gap_minutes": {
+          "defaultValue": { "value": "3" },
+          "valueType": "NUMBER",
+          "description": "전면 광고 최소 간격(분), 1 미만이면 3"
+        }
+      }
+    },
+    "app_update": {
+      "description": "버전 관리: 현재 < min이면 강제 업데이트(닫기 불가), 현재 < latest이면 선택 업데이트(버전당 1회). 스토어 링크가 비어 있으면 안내하지 않음. 순서: 스토어 공개 확인 → latest 올림 → (필요 시) min 올림",
+      "parameters": {
+        "ios_min_version": {
+          "defaultValue": { "value": "1.0.0" },
+          "valueType": "STRING",
+          "description": "iOS 최소 지원 버전 (x.y.z)"
+        },
+        "ios_latest_version": {
+          "defaultValue": { "value": "1.0.0" },
+          "valueType": "STRING",
+          "description": "iOS 최신 버전 (x.y.z)"
+        },
+        "ios_store_url": {
+          "defaultValue": { "value": "https://apps.apple.com/app/id6835096650" },
+          "valueType": "STRING",
+          "description": "App Store 링크"
+        },
+        "android_min_version": {
+          "defaultValue": { "value": "1.0.0" },
+          "valueType": "STRING",
+          "description": "Android 최소 지원 버전 (x.y.z)"
+        },
+        "android_latest_version": {
+          "defaultValue": { "value": "1.0.0" },
+          "valueType": "STRING",
+          "description": "Android 최신 버전 (x.y.z)"
+        },
+        "android_store_url": {
+          "defaultValue": { "value": "" },
+          "valueType": "STRING",
+          "description": "Play 프로덕션 공개 후 입력 (비우면 안내하지 않음)"
+        },
+        "update_message": {
+          "defaultValue": { "value": "" },
+          "valueType": "STRING",
+          "description": "업데이트 팝업 본문 (비우면 기본 문구)"
+        }
+      }
+    }
+  }
+}

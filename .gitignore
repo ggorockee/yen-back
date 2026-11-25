@@ -7,3 +7,7 @@
 
 # 개인 작업 메모
 request.md
+
+# Firebase 설정 파일 (공개 리포라 커밋하지 않음, mobile/README.md 참고)
+mobile/ios/Runner/GoogleService-Info.plist
+mobile/android/app/google-services.json
