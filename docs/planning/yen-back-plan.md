@@ -243,16 +243,20 @@ API 응답 예시
 
 ### 5주차: 수익화와 마감
 - [x] AdMob 배너, 전면광고 빈도 제어 (테스트 ID)
-- [ ] AdMob 실제 앱 ID, 광고 단위 ID 발급 및 적용
+- [x] AdMob 실제 앱 ID, 광고 단위 ID 발급 및 적용
 - [x] 광고 제거 인앱 결제와 복원 (코드)
-- [ ] 스토어에 remove_ads 상품 등록
+- [x] 스토어에 remove_ads 상품 등록 (이후 인앱 결제를 쓰지 않기로 결정, Play 상품은 삭제하고 App Store 상품은 미제출)
 - [x] 온보딩, 설정, 면책 문구
-- [ ] 개인정보처리방침 웹 페이지 게시 (스토어 등록용 URL)
+- [x] 개인정보처리방침 웹 페이지 게시 (스토어 등록용 URL)
 
 ### 6주차: 출시
 - [ ] 제도 팩트 시트를 공식 출처로 최종 검증
 - [ ] 실기기 QA (iOS/Android, 오프라인, 알림)
-- [ ] 스토어 등록 (스크린샷, 소개문), 심사 제출
+- [x] iOS 스토어 등록, 심사 완료 (1.0, 2026-11-17 공개)
+- [ ] Android 스토어 등록, 프로덕션 출시
+- [x] AdMob iOS 앱에 App Store 연결 (2026-11-25)
+- [ ] AdMob iOS 앱 인증과 광고 게재 제한 해제 ([admob-store-linking.md](admob-store-linking.md) 4장)
+- [ ] Google Ads 돌려받엔-iOS 캠페인과 설치 전환 측정 ([admob-store-linking.md](admob-store-linking.md) 6장)
 - [ ] 블로그 포스팅 2편 발행
 
 버퍼: 심사 반려에 대비해 1주를 예비로 둠. 출시가 늦어질 것 같으면 iOS/Android 중 하나를 먼저 내는 것도 검토.
