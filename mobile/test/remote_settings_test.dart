@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' show ConsentStatus;
 import 'package:yen_back/core/app_version.dart';
 import 'package:yen_back/services/ads.dart';
+import 'package:yen_back/services/install_measurement.dart';
 import 'package:yen_back/services/remote_settings.dart';
 
 RemoteSettings settings(Map<String, Object> values, {bool isIOS = true}) {
@@ -80,6 +82,13 @@ void main() {
       final keys = groups.expand((g) => (g['parameters'] as Map).keys.cast<String>()).toSet();
       expect(keys, RemoteSettings.parameterDefaults.keys.toSet());
     });
+  });
+
+  test('install measurement runs only where consent is not needed', () {
+    expect(InstallMeasurement.allowedBy(ConsentStatus.notRequired), isTrue);
+    expect(InstallMeasurement.allowedBy(ConsentStatus.obtained), isFalse);
+    expect(InstallMeasurement.allowedBy(ConsentStatus.required), isFalse);
+    expect(InstallMeasurement.allowedBy(ConsentStatus.unknown), isFalse);
   });
 
   test('remote limits replace the interstitial frequency cap', () {

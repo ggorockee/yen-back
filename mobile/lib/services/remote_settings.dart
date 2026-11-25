@@ -74,12 +74,23 @@ class RemoteSettings {
     );
   }
 
-  /// Starts Firebase (Analytics then records installs by itself) and reads
-  /// Remote Config. Never throws and never blocks app startup.
-  static Future<RemoteSettings> load() async {
+  /// Starts Firebase from GoogleService-Info.plist / google-services.json.
+  /// Returns false when it is not configured; never throws.
+  static Future<bool> startFirebase() async {
     try {
-      // Reads GoogleService-Info.plist / google-services.json.
       await Firebase.initializeApp();
+      return true;
+    } catch (e) {
+      debugPrint('[RemoteSettings] Firebase unavailable: $e');
+      return false;
+    }
+  }
+
+  /// Reads Remote Config once [firebase] has started. Never throws and never
+  /// blocks app startup.
+  static Future<RemoteSettings> load(Future<bool> firebase) async {
+    if (!await firebase) return defaults;
+    try {
       final config = FirebaseRemoteConfig.instance;
       await config.setConfigSettings(
         RemoteConfigSettings(
@@ -101,7 +112,7 @@ class RemoteSettings {
         isIOS: Platform.isIOS,
       );
     } catch (e) {
-      debugPrint('[RemoteSettings] Firebase unavailable, using defaults: $e');
+      debugPrint('[RemoteSettings] using defaults: $e');
       return defaults;
     }
   }

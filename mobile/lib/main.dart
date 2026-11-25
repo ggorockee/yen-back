@@ -15,6 +15,7 @@ import 'data/app_database.dart';
 import 'data/receipt_files.dart';
 import 'services/ad_consent.dart';
 import 'services/analytics.dart';
+import 'services/install_measurement.dart';
 import 'services/notification_service.dart';
 import 'services/remote_settings.dart';
 import 'state/providers.dart';
@@ -32,6 +33,9 @@ Future<void> main() async {
     initializeDateFormatting('ko_KR'),
   ).wait;
 
+  // Started before consent: UMP passes consent choices on to Firebase.
+  final firebase = RemoteSettings.startFirebase();
+
   // Ads must never block startup. Consent (EEA/UK/CH) is asked after the first
   // frame, since the form needs a visible screen; ads load once it resolves.
   final adsReady = Completer<bool>();
@@ -47,7 +51,7 @@ Future<void> main() async {
       adsReadyProvider.overrideWithValue(adsReady.future),
       appVersionProvider.overrideWithValue(AppVersion.parse(info.version)),
       // Not awaited: the app opens right away and reacts when settings arrive.
-      remoteSettingsProvider.overrideWithValue(RemoteSettings.load()),
+      remoteSettingsProvider.overrideWithValue(RemoteSettings.load(firebase)),
     ],
   );
   container.read(analyticsProvider).track(AppEvent.appOpen);
@@ -60,8 +64,19 @@ Future<void> main() async {
     ),
   );
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    adsReady.complete(AdConsent.gatherAndStartAds().catchError((Object _) => false));
+    adsReady.complete(_consentThenAds(firebase));
   });
+}
+
+Future<bool> _consentThenAds(Future<bool> firebase) async {
+  await firebase;
+  try {
+    return await AdConsent.gatherAndStartAds();
+  } catch (_) {
+    return false;
+  } finally {
+    await InstallMeasurement.startIfAllowed();
+  }
 }
 
 /// Flushes pending activity events when the app goes to the background.
