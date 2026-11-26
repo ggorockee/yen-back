@@ -15,6 +15,7 @@ import 'data/app_database.dart';
 import 'data/receipt_files.dart';
 import 'services/ad_consent.dart';
 import 'services/analytics.dart';
+import 'services/crash_reporting.dart';
 import 'services/install_measurement.dart';
 import 'services/notification_service.dart';
 import 'services/remote_settings.dart';
@@ -35,6 +36,7 @@ Future<void> main() async {
 
   // Started before consent: UMP passes consent choices on to Firebase.
   final firebase = RemoteSettings.startFirebase();
+  unawaited(CrashReporting.enable(firebase));
 
   // Ads must never block startup. Consent (EEA/UK/CH) is asked after the first
   // frame, since the form needs a visible screen; ads load once it resolves.
