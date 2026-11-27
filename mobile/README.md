@@ -47,6 +47,21 @@ Analytics 수집은 기본으로 꺼져 있고, UMP가 동의가 필요 없는 �
 
 새 버전 배포 순서: 스토어 공개 확인 → latest 올림 → 필요할 때만 min 올림. 강제·선택 업데이트 노출과 반응은 서버 활동 이벤트(update_prompt_shown, force_update_shown, update_accepted, update_dismissed)로 집계됩니다.
 
+## 업데이트 안내 카드 (1.1.1부터 적용)
+
+2026-11-27 결정: 앞으로 업데이트는 화면 대부분을 덮는 넘김 카드로 알립니다. 세 앱 공통 표준은 infra 저장소 `claudedocs/app-update-card.md`, 기준 구현은 reviewmaps `mobile/`(2.2.3)입니다. 아직 적용 전이며 지금은 `lib/ui/update_gate.dart`의 작은 팝업을 씁니다.
+
+| 순서 | 1.1.1에서 할 일 |
+|---|---|
+| 1 | `release_note` 모델·서비스·카드 화면 이식. 신규 설치는 `onboarding.done` 값이 없는 것으로 구분하고, 온보딩이 이 값을 저장하기 전에 기록 |
+| 2 | `assets/release_notes.json` 추가(1~3장), pubspec 등록, 버전 일치 테스트 |
+| 3 | `UpdateGate`가 팝업 대신 카드를 띄우게 변경. 강제·선택 규칙(버전당 1회)은 유지 |
+| 4 | `firebase/remoteconfig.template.json`과 `remote_settings.dart`에 `release_note` 키 추가 |
+| 5 | 이벤트(카드 표시, 선택, 본 장)를 앱과 서버 허용 목록에 함께 추가 |
+| 6 | 이전 버전 위에 덮어 설치해 카드 1회 표시, 새 설치에는 없는지 확인 |
+
+적용한 뒤에는 릴리스마다 `release_notes.json`을 갱신합니다.
+
 ## 개인정보
 
 - 매장, 상품, 영수증 사진, 출국일은 기기에만 저장됩니다 (영수증 사진은 앱 전용 문서 폴더).
